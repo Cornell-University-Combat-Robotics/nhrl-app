@@ -4,7 +4,8 @@ import { supabase } from './supabaseClient';
 async function addRobot(){
     const { data, error } = await supabase
         .from('robots')
-        .insert({ robot_name: "Beater" });
+        .insert({ robot_name: "Beater" })
+        .select();
 
     if (error) {
         console.error("Insert failed:", error.message);

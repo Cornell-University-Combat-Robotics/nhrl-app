@@ -1,6 +1,7 @@
 import { Text, View, StyleSheet } from "react-native";
 import { Link } from 'expo-router';
 
+/** Home page */ 
 export default function Index() {
   return (
     <View style={styles.container}>
