@@ -1,7 +1,20 @@
 import { Text, View, StyleSheet, Button } from 'react-native';
 import addRobot from '../../src/addRobot.ts';
+import retrieveRobot from '../../src/retrieveRobot.ts';
+import { useState } from 'react';
+
 
 export default function AboutScreen() {
+
+  const [robotName, setRobotName] = useState("");
+
+  const handleRetrieveData = async () => {
+    const data = await retrieveRobot();
+    if(data){
+      setRobotName(data.robot_name)
+    }
+  }
+
   return (
     <>
       <View style={styles.container}>
@@ -9,9 +22,21 @@ export default function AboutScreen() {
       </View>
 
       <Button
-        onPress={addRobot}
+      //must await async function, o/w may not complete!!
+        onPress={
+          async() => {
+            await addRobot(); //waits to complete
+          }
+        }
         title="Add robots!"
       /> 
+
+      <Button
+        onPress={ handleRetrieveData }
+        title="Retrieve robots!"
+      /> 
+
+      <Text>{robotName}</Text>
     </>
   );
 }
