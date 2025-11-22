@@ -1,10 +1,10 @@
 import { supabase } from './supabaseClient';
 
-//prebuilt robots
-async function addRobot(){
+//prebuilt robots -- our mutation fxn
+async function addRobot(robot_name: string){
     const { data, error } = await supabase
         .from('robots')
-        .insert({ robot_name: "Beater" })
+        .insert({ robot_name: robot_name })
         .select();
 
     if (error) {
