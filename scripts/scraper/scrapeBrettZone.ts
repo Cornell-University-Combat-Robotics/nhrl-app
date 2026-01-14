@@ -1,10 +1,10 @@
 import 'dotenv/config'
 import axios from 'axios'
-import cheerio from 'cheerio'
+import * as cheerio from 'cheerio' //jQuery-like DOM parser for HTML, used to scrape data
 import cron from 'node-cron'
 import fs from 'fs'
 import path from 'path'
-import { supabase } from '../../src/supabaseClient'
+import { supabase } from '../../src/supabaseClient.ts'
 
 const TARGET_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/'
 const CRON_SCHEDULE = process.env.SCRAPER_CRON || '0 2 * * *' // default: daily at 02:00
@@ -15,6 +15,10 @@ function ensureLogDir() {
   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
 }
 
+/**
+ * Creates machine-readable logs in scraper.log (good for parsing/analysis).
+ * Console output for quick debugging.
+ */
 function log(level: 'info' | 'warn' | 'error', message: string, meta?: any) {
   ensureLogDir()
   const timestamp = new Date().toISOString()
@@ -41,13 +45,18 @@ async function fetchHtml(url: string) {
  * - Duration (seconds)
  */
 function parseFights(html: string) {
+  //$: a FXN. when you call $(...), returns Cheerio object that you can use to query the DOM.
   const $ = cheerio.load(html)
   const fights: Array<any> = []
 
-  // Heuristic selectors: try common patterns, fallback gracefully
+  //TODO: fix parsing heuristics -- see brettzone HTML source
+  // Heuristic selectors: try common patterns (MIGHT exist), fallback gracefully
+  //'.': class selector, 'fight': element name: "class='fight'"
   const entrySelectors = ['.fight', '.match', '.bout', '.fight-entry', '.result'].join(', ')
 
+  //Example: $(fights) returns array-like elt w/all the fight elements in document
   $(entrySelectors).each((_, el) => {
+    //$(el) wraps the element so you can use Cheerio methods
     const root = $(el)
 
     // Try a few selectors for robot/opponent names
@@ -92,7 +101,7 @@ function parseFights(html: string) {
       if (sec) fightDuration = parseInt(sec, 10)
     }
 
-    // minimal validation: must have robotName and opponentName or robotName and time
+    // minimal validation: must have robotName 
     if (robotName) {
       fights.push({ robotName, opponentName: opponentName || null, cage, fightTime, is_win, fightDuration, outcome_type })
     }
@@ -113,6 +122,9 @@ function parseFights(html: string) {
   return fights
 }
 
+/* TODO: shouldn't throw error -- becuz it might be a robot we don't own. We should just filter by OUR robots.
+reformat this method: all robots CRC owns should alr exist for simplicity, so we will only ever GET robot
+*/
 async function getOrCreateRobot(robotName: string) {
   try {
     const { data, error } = await supabase.from('robots').select('robot_id').eq('robot_name', robotName).limit(1)
@@ -134,9 +146,11 @@ async function upsertFight(f: any) {
     const fight_time = f.fightTime || null
 
     // try to find an existing fight by robot_id + fight_time + cage
+    // builds SQL query string
     let existingQuery = supabase.from('fights').select('fight_id,last_updated').eq('robot_id', robot_id)
     if (fight_time) existingQuery = existingQuery.eq('fight_time', fight_time)
     if (f.cage) existingQuery = existingQuery.eq('cage', f.cage)
+    // executes query and gets result
     const { data: existing, error: exErr } = await existingQuery.limit(1)
     if (exErr) throw exErr
 
@@ -154,9 +168,11 @@ async function upsertFight(f: any) {
 
     if (existing && existing.length > 0) {
       const fight_id = existing[0].fight_id
+      // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
       await supabase.from('fights').update(payload).eq('fight_id', fight_id)
       log('info', `Updated fight ${fight_id} for ${f.robotName}`)
     } else {
+      // no existing fight, so INSERT new one into DB
       const { error: insErr } = await supabase.from('fights').insert(payload)
       if (insErr) throw insErr
       log('info', `Inserted fight for ${f.robotName} vs ${f.opponentName || 'unknown'}`)
@@ -188,7 +204,10 @@ export async function runScrape() {
 }
 
 // CLI support: run once immediately with `npm run scrape -- --once` or `node ... --once`
-if (require.main === module) {
+const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                     process.argv[1]?.includes('scrapeBrettZone')
+
+if (isMainModule) {
   const args = process.argv.slice(2)
   const runOnce = args.includes('--once') || args.includes('run-now')
   if (runOnce) {
