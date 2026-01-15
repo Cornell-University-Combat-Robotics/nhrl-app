@@ -88,7 +88,7 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
         robot_name: ourRobotName,
         opponent_name: opponentName,
         cage: cage,
-        fight_time: fightTime,
+        fight_time: formatTime(fightTime),
         is_win: isWin,
         fight_duration: fightDuration,
         outcome_type: outcomeType,
@@ -120,6 +120,21 @@ async function getRobotId(robotName: string): Promise<number> {
 }
 
 /**
+ * Formats epoch timestamp (seconds) to time string for PostgreSQL TIME type
+ * @param timestamp - Epoch timestamp in seconds
+ * @returns Formatted time string in HH:MM:SS format (24-hour, e.g., "13:16:28")
+ */
+function formatTime(timestamp: number) {
+  if (!timestamp) return null
+  const date = new Date(timestamp * 1000)
+  // Format as HH:MM:SS (24-hour format) for PostgreSQL TIME type
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const seconds = date.getSeconds().toString().padStart(2, '0')
+  return `${hours}:${minutes}:${seconds}`
+}
+
+/**
  * @param f - fight object
  */
 async function upsertFight(f: any) {
@@ -134,11 +149,12 @@ async function upsertFight(f: any) {
     // executes query and gets result
     const { data: existing, error: exErr } = await existingQuery.limit(1)
     if (exErr) throw exErr
-
+    
     const now = Math.floor(Date.now() / 1000)
     const payload = {
+      robot_id: robot_id,
       ...f,
-      last_updated: now
+      last_updated: formatTime(now)
     }
 
     if (existing && existing.length > 0) {
@@ -153,7 +169,14 @@ async function upsertFight(f: any) {
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     }
   } catch (err: any) {
-    log('error', 'upsertFight failed', { err: String(err), fight: f })
+    const errorMessage = err?.message || err?.toString() || JSON.stringify(err)
+    const errorDetails = err?.code || err?.details || err?.hint || ''
+    log('error', 'upsertFight failed', { 
+      err: errorMessage, 
+      details: errorDetails,
+      code: err?.code,
+      fight: f 
+    })
   }
 }
 

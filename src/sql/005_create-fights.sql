@@ -6,10 +6,19 @@ CREATE TABLE fights (
     robot_name TEXT,
     opponent_name TEXT, --prob change this to another table if wanna query opponent info
     cage BIGINT,
-    fight_time BIGINT, 
-    last_updated BIGINT, 
+    fight_time TIME, 
+    last_updated TIME, 
     -- 1 if OUR robot has won
     is_win BOOLEAN,
     fight_duration BIGINT,
     outcome_type TEXT
 );
+
+/* 
+ALTER TABLE public.fights 
+ALTER COLUMN last_updated
+SET DATA TYPE TIME 
+USING CASE 
+  WHEN last_updated IS NULL THEN NULL
+  ELSE (to_timestamp(last_updated)::time)
+END; */
