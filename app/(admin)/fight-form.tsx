@@ -1,5 +1,5 @@
-import { useRobots } from '@/src/hooks/';
 import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights';
+import { useRobots } from '@/src/hooks/useRobots';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -44,6 +44,7 @@ export default function FightFormScreen() {
 
     const fightData = {
       robot_id: parseInt(robotId),
+      //TODO: need to add robot name to the fight table
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
       fight_time: fightTime ? new Date(fightTime).getTime() : undefined,
@@ -52,6 +53,7 @@ export default function FightFormScreen() {
       outcome_type: outcomeType,
     };
 
+    //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
       if (isEditing) {
         await updateFight.mutateAsync({ fightId: fightId!, fight: fightData });

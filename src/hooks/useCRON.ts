@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider
 import * as cronDB from '../db/cron';
 
 //note: cron is a boolean! if true == running, false == off season
-export function useUpdateCRON(){
+export function useUpdateCron(){
     const queryClient = useQueryClient();
 
     return useMutation({
