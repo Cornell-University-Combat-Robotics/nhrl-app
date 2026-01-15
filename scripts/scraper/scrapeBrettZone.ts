@@ -6,8 +6,8 @@ import path from 'path'
 import { supabase } from '../../src/supabaseClient.ts'
 
 const API_BASE_URL = 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
-//TODO: should have a competition season, and an off-season
-const CRON_SCHEDULE = process.env.SCRAPER_CRON || '* * * * *' // default: every minute
+//during competition season, and an off-season (never)
+const CRON_SCHEDULE= process.env.SCRAPER_CRON || '* * * * *' // default: every minute
 const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
 const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
 
