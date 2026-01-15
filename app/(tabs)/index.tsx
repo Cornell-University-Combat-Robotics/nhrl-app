@@ -1,98 +1,215 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useFights } from '@/src/hooks/useFights';
+import { useRobots } from '@/src/hooks/useRobots';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+/** Home page */ 
+export default function Index() {
+  const { session, isAdmin, user, refreshAdminStatus } = useAuth();
+  const { data: robots, isLoading: robotsLoading } = useRobots();
+  const { data: fights, isLoading: fightsLoading } = useFights();
+  const [refreshing, setRefreshing] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
-export default function HomeScreen() {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setDebugInfo('Checking admin status...');
+    console.log('Manual refresh triggered');
+    
+    // Also try to query the profiles table directly to see what's happening
+    const { supabase } = await import('@/src/supabaseClient');
+    if (user) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      console.log('Direct profile query:', { data, error, userId: user.id });
+      setDebugInfo(`Query result: ${error ? `Error: ${error.message}` : `Role: ${data?.role || 'not found'}`}`);
+    }
+    
+    await refreshAdminStatus();
+    setRefreshing(false);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Welcome to CRC's Competition App!</Text>
+        
+        {session ? (
+          <View style={styles.authSection}>
+            <Text style={styles.text}>Logged in as: {user?.email}</Text>
+            <Text style={styles.text}>User ID: {user?.id?.substring(0, 8)}...</Text>
+            <Text style={styles.text}>Admin Status: {isAdmin ? '✅ Admin' : '❌ User'}</Text>
+            {debugInfo ? (
+              <Text style={styles.debugText}>{debugInfo}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              <Text style={styles.refreshButtonText}>
+                {refreshing ? 'Refreshing...' : '🔄 Refresh Admin Status'}
+              </Text>
+            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.adminButton}
+                onPress={() => router.push('/(admin)')}
+              >
+                <Text style={styles.adminButtonText}>Go to Admin Dashboard</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <View style={styles.authSection}>
+            <Text style={styles.text}>Please log in to access admin features</Text>
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={() => router.push('/(auth)/login')}
+            >
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Database Stats</Text>
+          
+          {robotsLoading || fightsLoading ? (
+            <ActivityIndicator size="small" color="#fff" style={styles.loader} />
+          ) : (
+            <>
+              <View style={styles.statCard}>
+                <Text style={styles.statNumber}>{robots?.length || 0}</Text>
+                <Text style={styles.statLabel}>Robots</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statNumber}>{fights?.length || 0}</Text>
+                <Text style={styles.statLabel}>Fights</Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.aboutButton}
+          onPress={() => router.push('/(tabs)/about')}
+        >
+          <Text style={styles.aboutButtonText}>View About Page</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#e62020ff',
+  },
+  content: {
+    padding: 20,
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  text: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  authSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+  },
+  loginButton: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
+    marginTop: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  loginButtonText: {
+    color: '#e62020',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  refreshButton: {
+    backgroundColor: '#2196F3',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  adminButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  adminButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statsSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  loader: {
+    marginTop: 8,
+  },
+  statCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  aboutButton: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  aboutButtonText: {
+    color: '#e62020',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
