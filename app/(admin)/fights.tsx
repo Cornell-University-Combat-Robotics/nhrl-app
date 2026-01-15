@@ -1,5 +1,5 @@
-import { useDeleteFight, useFights } from '@/src/hooks/useFights';
 import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
+import { useDeleteFight, useFights } from '@/src/hooks/useFights';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -31,10 +31,10 @@ export default function FightsScreen() {
   };
 
   const handleCron = async () => {
-    try{
-      const isSeason = cron?.[0].isSeason;
-      await updateCron.mutateAsync(isSeason);
-    }catch(err: any){
+    try {
+      const cur_schedule = cron?.[0].cron_schedule;
+      await updateCron.mutateAsync(cur_schedule);
+    } catch (err: any) {
       Alert.alert('Error', `Failed to update season: ${err.message || 'Unknown error'}`);
     }
   }
@@ -61,7 +61,7 @@ export default function FightsScreen() {
         style={styles.cronButton}
         onPress={() => handleCron()}
       >
-        <Text style={styles.cronButtonText}>{cron?.[0]?.isSeason ? 'Deactivate Season' : 'Activate Season'}</Text>
+        <Text style={styles.cronButtonText}>{cron?.[0]?.cron_schedule === '* * * * *' ? 'Deactivate Season' : 'Activate Season'}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

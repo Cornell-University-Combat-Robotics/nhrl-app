@@ -1,13 +1,12 @@
 import 'dotenv/config'
 import axios from 'axios'
 import cron from 'node-cron'
+import { getCron } from '../../src/db/cron'
 import fs from 'fs'
 import path from 'path'
 import { supabase } from '../../src/supabaseClient.ts'
 
 const API_BASE_URL = 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
-//during competition season, and an off-season (never)
-const CRON_SCHEDULE= process.env.SCRAPER_CRON || '* * * * *' // default: every minute
 const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
 const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
 
@@ -224,10 +223,11 @@ if (isMainModule) {
     runScrape().then(() => process.exit(0)).catch(() => process.exit(1))
   } else {
     // Start scheduled job
-    cron.schedule(CRON_SCHEDULE, () => {
+    const cron_data = await getCron()
+    cron.schedule(cron_data?.[0]?.cron_schedule, () => {
       runScrape()
     })
 
-    log('info', `Scheduler started (${CRON_SCHEDULE}). Target: ${API_BASE_URL}. Logs: ${LOG_FILE}`)
+    log('info', `Scheduler started (${cron_data?.[0]?.cron_schedule}). Target: ${API_BASE_URL}. Logs: ${LOG_FILE}`)
   }
 }
