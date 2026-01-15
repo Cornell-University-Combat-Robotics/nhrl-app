@@ -5,25 +5,6 @@ import fs from 'fs'
 import path from 'path'
 import { supabase } from '../../src/supabaseClient.ts'
 
-/*
-Changes to make:
-1. Instead of mass querying to https://brettzone.nhrl.io/brettZone/, i want to make a selective query to get only robots WE own. 
-This means we focus our querying on 6 robots: (note: the following links are HTML links, we need API links, see regex)
-- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Benny+R.+Johm
-- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Capsize
-- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Huey
-- 3 more robots yet to be added to nhrl database: Apollo, Jormangandr, Unkulunkulu
-- or, instead of harcoding links, use: regex: https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php?bot=<robotName> 
-
-2. Change parseFights() since we now know the specific query fields:
-- main fields:  "botName": "Benny R. Johm", "fights"
-- relevant fields nested within "fights": "cage": "Cage 4", "player1": "Carmen", "player2": "Benny R. Johm", "player1wins": "1",
-      "player2wins": "0", "player1wins": "1", "player2wins": "0", "winAnnotation": "JD", "matchLength": "180", "startTime":"1746299570"
-- note: benny could be either player 1 or player 2
-
-3. Change getOrCreateRobot() 
-- make it just get robot_id, if doesnt exist, throw error
-*/
 const API_BASE_URL = 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
 //TODO: should have a competition season, and an off-season
 const CRON_SCHEDULE = process.env.SCRAPER_CRON || '* * * * *' // default: every minute
