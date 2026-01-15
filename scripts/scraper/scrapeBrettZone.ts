@@ -1,15 +1,43 @@
 import 'dotenv/config'
 import axios from 'axios'
-import * as cheerio from 'cheerio' //jQuery-like DOM parser for HTML, used to scrape data
 import cron from 'node-cron'
 import fs from 'fs'
 import path from 'path'
 import { supabase } from '../../src/supabaseClient.ts'
 
-const TARGET_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/'
-const CRON_SCHEDULE = process.env.SCRAPER_CRON || '0 2 * * *' // default: daily at 02:00
+/*
+Changes to make:
+1. Instead of mass querying to https://brettzone.nhrl.io/brettZone/, i want to make a selective query to get only robots WE own. 
+This means we focus our querying on 6 robots: (note: the following links are HTML links, we need API links, see regex)
+- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Benny+R.+Johm
+- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Capsize
+- https://brettzone.nhrl.io/brettZone/fightsByBot.php?bot=Huey
+- 3 more robots yet to be added to nhrl database: Apollo, Jormangandr, Unkulunkulu
+- or, instead of harcoding links, use: regex: https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php?bot=<robotName> 
+
+2. Change parseFights() since we now know the specific query fields:
+- main fields:  "botName": "Benny R. Johm", "fights"
+- relevant fields nested within "fights": "cage": "Cage 4", "player1": "Carmen", "player2": "Benny R. Johm", "player1wins": "1",
+      "player2wins": "0", "player1wins": "1", "player2wins": "0", "winAnnotation": "JD", "matchLength": "180", "startTime":"1746299570"
+- note: benny could be either player 1 or player 2
+
+3. Change getOrCreateRobot() 
+- make it just get robot_id, if doesnt exist, throw error
+*/
+const API_BASE_URL = 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
+//TODO: should have a competition season, and an off-season
+const CRON_SCHEDULE = process.env.SCRAPER_CRON || '* * * * *' // default: every minute
 const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
 const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
+
+const CRC_ROBOTS = [
+  'Benny R. Johm',
+  'Capsize',
+  'Huey',
+  'Apollo',
+  'Jormangandr',
+  'Unkulunkulu'
+]
 
 function ensureLogDir() {
   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
@@ -28,154 +56,120 @@ function log(level: 'info' | 'warn' | 'error', message: string, meta?: any) {
   console[level === 'error' ? 'error' : 'log'](`${timestamp} [${level}] ${message}`)
 }
 
-async function fetchHtml(url: string) {
-  const r = await axios.get(url, { timeout: 15_000 })
-  return r.data as string
-}
-
 /**
- * Parse fight entries from brettZone page HTML.
- * NOTE: The real site structure may change; adjust selectors accordingly.
- * Basic extraction patterns (essential fields only):
- * - Robot name
- * - Opponent name
- * - Cage number (if present)
- * - Fight time (parse to epoch seconds if present)
- * - Outcome (text -> is_win + outcome_type)
- * - Duration (seconds)
+ * Parse fight data from API JSON response. A clean-up fxn.
+ * @param matches - Array of match objects from the API
+ * @param ourRobotName - The name of the robot we're querying for (to determine opponent and win/loss)
+ * 
+ * API fields:
+ * - "cage": "Cage 4"
+ * - "player1": "Carmen", "player1clean": "carmen"
+ * - "player2": "Benny R. Johm", "player2clean": "bennyrjohm"
+ * - "player1wins": "1", "player2wins": "0"
+ * - "winAnnotation": "JD" (Judges Decision), "TO" (Tapout), "KO" (Knockout)
+ * - "matchLength": "180" (in seconds)
+ * - "startTime": "1746299570" (epoch seconds)
+ * 
+ * Note: our robot could be either player1 or player2
  */
-function parseFights(html: string) {
-  //$: a FXN. when you call $(...), returns Cheerio object that you can use to query the DOM.
-  const $ = cheerio.load(html)
-  const fights: Array<any> = []
+function parseFightsFromApi(matches: any[], ourRobotName: string) {
+  //define fight fields
+  //TODO: once fights are completed, we DON'T wanna waste time re-updating!!
+  let fights: Array<{
+    robot_name: string,
+    opponent_name: string,
+    cage: number | null,
+    fight_time: number | null
+    is_win: boolean | null
+    fight_duration: number | null
+    outcome_type: string | null
+  }> = []
 
-  //TODO: fix parsing heuristics -- see brettzone HTML source
-  // Heuristic selectors: try common patterns (MIGHT exist), fallback gracefully
-  //'.': class selector, 'fight': element name: "class='fight'"
-  const entrySelectors = ['.fight', '.match', '.bout', '.fight-entry', '.result'].join(', ')
+  fights = matches
+    .filter((match) => {
+      //skips invalid arrays
+      if(!match.player1 || !match.player2) {
+        log('warn', 'skipping invalid match array', { match })
+        return false //excludes match 
+      }
+      return true
+    })
+    .map((match) => {
+      const isPlayer1 = match.player1 === ourRobotName
+      const opponentName = isPlayer1 ? match.player2 : match.player1
+      const cage = match.cage ? parseInt(match.cage.replace('Cage ', '')) : null
+      const fightTime = match.startTime ? parseInt(match.startTime) : null
+      const isWin = isPlayer1 ? match.player1wins === '1' : match.player2wins === '1'
+      const fightDuration = match.matchLength ? parseInt(match.matchLength) : null
+      const outcomeType = match.winAnnotation
 
-  //Example: $(fights) returns array-like elt w/all the fight elements in document
-  $(entrySelectors).each((_, el) => {
-    //$(el) wraps the element so you can use Cheerio methods
-    const root = $(el)
-
-    // Try a few selectors for robot/opponent names
-    const robotName = (root.find('.robot, .our-robot, .bot-name, .name').first().text() || '').trim()
-    const opponentName = (root.find('.opponent, .their-robot, .opp-name, .opponent-name').first().text() || '').trim()
-
-    // cage/floor/arena number
-    const cageText = (root.find('.cage, .arena, .ring, .stage').first().text() || '').trim()
-    const cage = parseInt((cageText.match(/\d+/) || [])[0] || '0', 10) || null
-
-    // fight time - try data attributes or visible timestamps
-    let fightTime: number | null = null
-    const timeAttr = root.attr('data-time') || root.find('time').attr('datetime') || root.find('.time').text()
-    if (timeAttr) {
-      const parsed = Date.parse(timeAttr)
-      if (!isNaN(parsed)) fightTime = Math.floor(parsed / 1000)
-    }
-
-    // outcome parsing
-    const outcomeText = (root.find('.outcome, .result-text, .result').first().text() || '').trim()
-    let is_win: boolean | null = null
-    let outcome_type: string | null = null
-    if (outcomeText) {
-      const t = outcomeText.toLowerCase()
-      if (t.includes('win') || t.includes('winner') || t.includes('ko') || t.includes('tap')) is_win = true
-      else if (t.includes('lose') || t.includes('loss') || t.includes('defeat')) is_win = false
-
-      if (t.includes('ko')) outcome_type = 'KO'
-      else if (t.includes('judge') || t.includes('decision')) outcome_type = 'Judges Decision'
-      else if (t.includes('tap')) outcome_type = 'Tapout'
-      else if (!outcome_type && t) outcome_type = outcomeText
-    }
-
-    // duration parsing (mm:ss or seconds)
-    let fightDuration: number | null = null
-    const durText = (root.find('.duration, .time, .fight-duration').first().text() || '').trim()
-    const mmss = durText.match(/(\d+):(\d{2})/)
-    if (mmss) {
-      fightDuration = parseInt(mmss[1], 10) * 60 + parseInt(mmss[2], 10)
-    } else {
-      const sec = (durText.match(/(\d+)s/) || [])[1]
-      if (sec) fightDuration = parseInt(sec, 10)
-    }
-
-    // minimal validation: must have robotName 
-    if (robotName) {
-      fights.push({ robotName, opponentName: opponentName || null, cage, fightTime, is_win, fightDuration, outcome_type })
-    }
-  })
-
-  // If no entries matched, try a fallback: scan table rows
-  if (fights.length === 0) {
-    $('table tr').each((_, tr) => {
-      const cols = $(tr).find('td')
-      if (cols.length >= 2) {
-        const robotName = $(cols[0]).text().trim()
-        const opponentName = $(cols[1]).text().trim()
-        if (robotName) fights.push({ robotName, opponentName, cage: null, fightTime: null, is_win: null, fightDuration: null, outcome_type: null })
+      return {
+        robot_name: ourRobotName,
+        opponent_name: opponentName,
+        cage: cage,
+        fight_time: fightTime,
+        is_win: isWin,
+        fight_duration: fightDuration,
+        outcome_type: outcomeType,
       }
     })
-  }
 
   return fights
 }
 
-/* TODO: shouldn't throw error -- becuz it might be a robot we don't own. We should just filter by OUR robots.
-reformat this method: all robots CRC owns should alr exist for simplicity, so we will only ever GET robot
-*/
-async function getOrCreateRobot(robotName: string) {
-  try {
-    const { data, error } = await supabase.from('robots').select('robot_id').eq('robot_name', robotName).limit(1)
-    if (error) throw error
-    if (data && data.length > 0) return data[0].robot_id
-
-    const insertRes = await supabase.from('robots').insert({ robot_name: robotName }).select('robot_id').limit(1)
-    if (insertRes.error) throw insertRes.error
-    return insertRes.data[0].robot_id
-  } catch (err: any) {
-    log('error', `getOrCreateRobot failed for ${robotName}`, { err: String(err) })
-    throw err
-  }
+/**
+ * Get robot_id from database. Throws if robot doesn't exist.
+ * All robots CRC owns should already exist in the database.
+ */
+async function getRobotId(robotName: string): Promise<number> {
+  /*
+  data = [
+    { robot_id: 42 }  // Array with one object
+  ]
+  */
+  const { data, error } = await supabase
+    .from('robots')
+    .select('robot_id')
+    .eq('robot_name', robotName)
+    .limit(1)
+  
+  if(error) throw error
+  if(data && data.length > 0) return data[0].robot_id
+  throw new Error(`Robot ${robotName} not found`)
 }
 
+/**
+ * @param f - fight object
+ */
 async function upsertFight(f: any) {
   try {
-    const robot_id = await getOrCreateRobot(f.robotName)
-    const fight_time = f.fightTime || null
+    const robot_id = await getRobotId(f.robot_name)
+    const fight_time = f.fight_time || null //need to filter by fight_time cuz same robot might have multiple fights
 
-    // try to find an existing fight by robot_id + fight_time + cage
+    // try to find an existing fight by robot_id + fight_time
     // builds SQL query string
-    let existingQuery = supabase.from('fights').select('fight_id,last_updated').eq('robot_id', robot_id)
+    let existingQuery = supabase.from('fights').select('fight_id').eq('robot_id', robot_id)
     if (fight_time) existingQuery = existingQuery.eq('fight_time', fight_time)
-    if (f.cage) existingQuery = existingQuery.eq('cage', f.cage)
     // executes query and gets result
     const { data: existing, error: exErr } = await existingQuery.limit(1)
     if (exErr) throw exErr
 
     const now = Math.floor(Date.now() / 1000)
     const payload = {
-      robot_id,
-      opponent_name: f.opponentName,
-      cage: f.cage,
-      fight_time,
-      last_updated: now,
-      is_win: f.is_win,
-      fight_duration: f.fightDuration,
-      outcome_type: f.outcome_type
+      ...f,
+      last_updated: now
     }
 
     if (existing && existing.length > 0) {
       const fight_id = existing[0].fight_id
       // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
       await supabase.from('fights').update(payload).eq('fight_id', fight_id)
-      log('info', `Updated fight ${fight_id} for ${f.robotName}`)
+      log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
     } else {
       // no existing fight, so INSERT new one into DB
-      const { error: insErr } = await supabase.from('fights').insert(payload)
-      if (insErr) throw insErr
-      log('info', `Inserted fight for ${f.robotName} vs ${f.opponentName || 'unknown'}`)
+      const { error } = await supabase.from('fights').insert(payload)
+      if (error) throw error
+      log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     }
   } catch (err: any) {
     log('error', 'upsertFight failed', { err: String(err), fight: f })
@@ -183,24 +177,36 @@ async function upsertFight(f: any) {
 }
 
 export async function runScrape() {
-  log('info', `Scrape started for ${TARGET_URL}`)
-  try {
-    const html = await fetchHtml(TARGET_URL)
-    const fights = parseFights(html)
-    log('info', `Parsed ${fights.length} fight(s)`)
+  log('info', `Scrape started for ${CRC_ROBOTS.length} robots`)
 
-    for (const f of fights) {
-      try {
-        await upsertFight(f)
-      } catch (err) {
-        log('error', 'upsert per-fight failed', { err: String(err), fight: f })
+  for(const robotName of CRC_ROBOTS) {
+    try{
+      log('info', `Fetching fights for ${robotName}`)
+      const url = `${API_BASE_URL}?bot=${encodeURIComponent(robotName)}`
+      const response = await axios.get(url, {timeout: 15_000})
+
+      if(!response.data) throw new Error('Failed to fetch fights')
+      if(!response.data.fights || response.data.fights.length === 0) {
+        log('info', `No fights found for ${robotName}`)
+        continue
       }
-    }
 
-    log('info', `Scrape finished for ${TARGET_URL}`)
-  } catch (err: any) {
-    log('error', `Scrape failed: ${err?.message || String(err)}`)
+      const fights = parseFightsFromApi(response.data.fights, robotName)
+      log('info', `Parsed ${fights.length} fight(s) for ${robotName}`)
+
+      for(const f of fights){
+        try{
+          await upsertFight(f)
+        }catch(err: any){
+          log('error', 'upsert per-fight failed', { err: String(err), fight: f })
+        }
+      }
+    }catch(err: any){
+      log('error', 'fetch fights from api failed', { err: String(err), robotName })
+    }
   }
+
+  log('info', 'Scrape finished for all robots')
 }
 
 // CLI support: run once immediately with `npm run scrape -- --once` or `node ... --once`
@@ -218,6 +224,6 @@ if (isMainModule) {
       runScrape()
     })
 
-    log('info', `Scheduler started (${CRON_SCHEDULE}). Target: ${TARGET_URL}. Logs: ${LOG_FILE}`)
+    log('info', `Scheduler started (${CRON_SCHEDULE}). Target: ${API_BASE_URL}. Logs: ${LOG_FILE}`)
   }
 }
