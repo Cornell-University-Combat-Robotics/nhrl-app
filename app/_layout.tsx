@@ -1,5 +1,6 @@
-import { Stack } from 'expo-router';
+import { AuthProvider } from '@/src/contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Stack } from 'expo-router';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,10 +21,14 @@ export const queryClient = new QueryClient({
 export default function RootLayout() {
   return (
     //wrap in QueryClientProvider for a GLOBAL storage location to store cached data, track loading states, or manage refetches.
-    <QueryClientProvider client={queryClient}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(admin)" />
+        </Stack>
+      </QueryClientProvider>
+    </AuthProvider>
   );
 }

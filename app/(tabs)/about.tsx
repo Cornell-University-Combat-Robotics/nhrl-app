@@ -1,49 +1,42 @@
-import { Text, View, StyleSheet, Button } from 'react-native';
-import addRobot from '../../src/addRobot.ts';
-import retrieveRobot from '../../src/retrieveRobot.ts';
-import { useState } from 'react';
-import { QueryClient } from '@tanstack/react-query';
-import useRetrieveRobot from '@/src/hooks/useRetrieveRobot.js';
-import useAddRobot from '@/src/hooks/useAddRobot.js';
-
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useRobots } from '@/src/hooks/useRobots';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function AboutScreen() {
-  //must call hooks at top level, not inside handlers
-
-  /* Hook subscribes AboutScreen component to query data
-  Whenever the query data changes, React re-renders component. */
-  const { data: robotData, isPending, isError, error  } = useRetrieveRobot();
-  const addRobotMutation = useAddRobot();
-
-  //auto updates!
-  const robotName = robotData?.robot_name || "Nothing yet";
-
-  const handleRobotAdd = () => {
-    //pass in single object into mutationFn
-    addRobotMutation.mutate("Beater")
-  }
-
-  if(isPending){
-    console.log("Adding robot data...")
-  }
-  if(isError){
-    console.log("Error in adding robot data: ", error.message)
-  }
+  const { data: robots, isLoading, error } = useRobots();
+  const { session, user } = useAuth();
 
   return (
-    <>
-      <View style={styles.container}>
-        <Text style={styles.text}>About screen</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>About</Text>
+        
+        {session ? (
+          <Text style={styles.text}>Welcome, {user?.email}!</Text>
+        ) : (
+          <Text style={styles.text}>Welcome! Please log in to access admin features.</Text>
+        )}
+
+        <Text style={styles.sectionTitle}>Robots Database</Text>
+        
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#fff" style={styles.loader} />
+        ) : error ? (
+          <Text style={styles.errorText}>Error loading robots: {(error as Error).message}</Text>
+        ) : robots && robots.length > 0 ? (
+          robots.slice(0, 10).map((robot: any) => (
+            <View key={robot.robot_id} style={styles.robotCard}>
+              <Text style={styles.robotName}>{robot.robot_name}</Text>
+              <Text style={styles.robotDetail}>Weight: {robot.weight_class}</Text>
+              <Text style={styles.robotDetail}>Weapon: {robot.weapon}</Text>
+              <Text style={styles.robotDetail}>Drive: {robot.drive}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No robots found in database.</Text>
+        )}
       </View>
-
-      <Button
-        onPress={ handleRobotAdd }
-        title={addRobotMutation.isPending? "Adding..." : "Add robots!"}
-        disabled={addRobotMutation.isPending}
-      /> 
-
-      <Text>{robotName}</Text>
-    </>
+    </ScrollView>
   );
 }
 
@@ -51,10 +44,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#25292e',
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  content: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
   },
   text: {
     color: '#fff',
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  loader: {
+    marginTop: 20,
+  },
+  errorText: {
+    color: '#e62020',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  emptyText: {
+    color: '#aaa',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  robotCard: {
+    backgroundColor: '#1a1d21',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  robotName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  robotDetail: {
+    color: '#aaa',
+    fontSize: 14,
+    marginTop: 4,
   },
 });
