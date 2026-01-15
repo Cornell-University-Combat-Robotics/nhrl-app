@@ -1,0 +1,25 @@
+name: Scheduled Scraper
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC (adjust as needed)
+  workflow_dispatch: {}
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm ci
+      - name: Run scraper once
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SCRAPER_TARGET_URL: 'https://brettzone.nhrl.io/brettZone/'
+        run: npm run scrape -- --once

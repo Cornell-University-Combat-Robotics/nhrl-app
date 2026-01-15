@@ -1,6 +1,43 @@
-# Welcome to your Expo app 👋
+# NHRL App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app for tracking and displaying robot fight data from the National Havoc Robot League (NHRL), built with Expo and TypeScript.
+
+## Overview
+
+This app provides a comprehensive platform for managing and viewing NHRL robot fight information, with automated data collection and real-time updates.
+
+### Core Features
+
+1. **Database & Infrastructure**
+   - Supabase database with table creation and migrations
+   - Basic user authentication
+   - Data persistence and synchronization
+
+2. **Data Collection**
+   - **Web Scraping Service**: Automated scraper that extracts fight data from BrettZone API
+     - Scheduled scraping at fixed intervals
+     - Parses essential fight data (robot names, opponents, outcomes, durations, etc.)
+     - Inserts/updates database records automatically
+     - Comprehensive error logging
+
+3. **Data Display**
+   - **Data Fetching**: Real-time data retrieval from Supabase
+   - **UI Updates**: TanStack Query for efficient data synchronization and UI reactivity
+   - Modern, responsive interface built with Tailwind CSS
+
+4. **Manual Updates**
+   - Admin interface for manual data edits
+   - Changes sync across all user devices via Supabase
+   - Real-time UI updates when data changes
+
+5. **Notifications**
+   - Local scheduled reminders using expo-notifications
+   - Fight reminders and important updates
+
+6. **User Interface**
+   - Clean, functional design with component library
+   - Tailwind CSS for styling
+   - Cross-platform support (iOS, Android, Web)
 
 ## Get started
 
@@ -10,41 +47,37 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+
+   Create a `.env` file with your Supabase credentials:
+   ```
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. Run the scraper (optional)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   npm run scrape -- --once
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project Structure
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- `app/` - Expo Router file-based routing
+- `src/` - Core application logic
+  - `supabaseClient.ts` - Supabase configuration
+  - `sql/` - Database schema and migrations
+- `scripts/scraper/` - Web scraping service
+  - `scrapeBrettZone.ts` - Main scraper implementation
 
 ## Learn more
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo documentation](https://docs.expo.dev/)
+- [Supabase documentation](https://supabase.com/docs)
+- [TanStack Query documentation](https://tanstack.com/query/latest)
