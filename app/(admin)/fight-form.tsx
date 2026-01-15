@@ -1,5 +1,5 @@
+import { useRobots } from '@/src/hooks/';
 import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights';
-import { useRobots } from '@/src/hooks/useRobots';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -145,8 +145,8 @@ export default function FightFormScreen() {
             {createFight.isPending || updateFight.isPending
               ? 'Saving...'
               : isEditing
-              ? 'Update Fight'
-              : 'Create Fight'}
+                ? 'Update Fight'
+                : 'Create Fight'}
           </Text>
         </TouchableOpacity>
       </View>

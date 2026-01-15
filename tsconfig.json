@@ -12,6 +12,5 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "src/hooks/useAddRobot.js", "src/hooks/useRetrieveRobot.js"  ]
+    "expo-env.d.ts"]
 }
