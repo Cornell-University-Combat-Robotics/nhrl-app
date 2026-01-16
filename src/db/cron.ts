@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.ts';
 
 export async function updateCron(cur_schedule: string){
     // Determine the new schedule value

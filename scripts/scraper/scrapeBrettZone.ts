@@ -1,12 +1,12 @@
 import 'dotenv/config'
 import axios from 'axios'
 import cron from 'node-cron'
-import { getCron } from '../../src/db/cron'
+import { getCron } from '../../src/db/cron.ts'
 import fs from 'fs'
 import path from 'path'
 import { supabase } from '../../src/supabaseClient.ts'
 
-const API_BASE_URL = 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
+const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
 const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
 const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
 
