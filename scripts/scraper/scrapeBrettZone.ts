@@ -212,6 +212,64 @@ export async function runScrape() {
   log('info', 'Scrape finished for all robots')
 }
 
+
+/* Handle CRON scheduler */
+
+//store active cron tasks
+const activeTasks = new Map<string, cron.ScheduledTask>();
+
+//maps job names to functions
+//Promise<void> (a Promise that resolves to/returns nothing)
+const jobFxns: Record<string, () => Promise<void>> = {
+  'scrapeBrettZone': runScrape,
+}
+
+//TODO: clean up script?
+
+/** Load & schedule jobs from database */
+async function loadAndScheduleJobs() {}
+
+/** Set up Supabase Realtime subscription */
+function setupRealtimeSubscription() {}
+
+/** Startup of scheduler scraping service */
+async function start(){
+  console.log('Starting realtime dynamic cron server...');
+  console.log('Time:', new Date().toISOString());
+  
+  //initial load of schedules
+  await loadAndScheduleJobs();
+
+  //subscribe to realtime changes in db
+  const channel = setupRealtimeSubscription();
+
+  console.log('\n✨ Server is running!');
+  console.log('📊 Active jobs:', activeTasks.size);
+  console.log('👂 Listening for database changes in real-time...\n');
+
+  //graceful shutdown when interrupted
+  process.on('SIGINT', async () => {
+    console.log('\nShutting down...');
+    
+    // Stop all cron jobs
+    activeTasks.forEach((task, name) => {
+      task.stop();
+      console.log(`[SHUTDOWN] Stopped ${name}`);
+    });
+
+    channel.unsubscribe();
+    console.log('Server shutdown complete');
+    
+    process.exit(0);
+  });
+}
+
+/** Start server */
+start().catch(error => {
+  console.error('Error starting scheduler:', error);
+  process.exit(1);
+});
+
 // CLI support: run once immediately with `npm run scrape -- --once` or `node ... --once`
 const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
                      process.argv[1]?.includes('scrapeBrettZone')

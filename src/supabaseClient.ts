@@ -10,5 +10,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
         autoRefreshToken: false,
         persistSession: false,
+    },
+    realtime: {
+        params: {
+            eventsPerSecond: 10, // throttle events to max of 10 per sec -> ensures u don't overload system (e.g. if user spams buttton that changes DB)
+        }
     }
 })
