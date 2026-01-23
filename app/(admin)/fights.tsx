@@ -1,10 +1,13 @@
+import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
 import { useDeleteFight, useFights } from '@/src/hooks/useFights';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function FightsScreen() {
   const { data: fights, isLoading, error } = useFights();
+  const { data: cron, isLoading: loadingCron } = useCron();
   const deleteFight = useDeleteFight();
+  const updateCron = useUpdateCron();
 
   const handleDelete = (fightId: number) => {
     Alert.alert(
@@ -27,7 +30,18 @@ export default function FightsScreen() {
     );
   };
 
-  if (isLoading) {
+  const handleCron = async () => {
+    try {
+      console.log('handleCron', cron);
+      const cur_schedule = cron?.[0].cron_schedule;
+      await updateCron.mutateAsync(cur_schedule);
+      console.log('successfully updated cron', cron);
+    } catch (err: any) {
+      Alert.alert('Error', `Failed to update season: ${err.message || 'Unknown error'}`);
+    }
+  }
+
+  if (isLoading || loadingCron) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#fff" />
@@ -45,6 +59,13 @@ export default function FightsScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <TouchableOpacity
+        style={styles.cronButton}
+        onPress={() => handleCron()}
+      >
+        <Text style={styles.cronButtonText}>{cron?.[0]?.cron_schedule === '* * * * *' ? 'Deactivate Season' : 'Activate Season'}</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => router.push('/(admin)/fight-form')}
@@ -103,6 +124,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#25292e',
+  },
+  cronButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    margin: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cronButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   addButton: {
     backgroundColor: '#4CAF50',

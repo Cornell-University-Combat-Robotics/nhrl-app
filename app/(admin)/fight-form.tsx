@@ -44,6 +44,7 @@ export default function FightFormScreen() {
 
     const fightData = {
       robot_id: parseInt(robotId),
+      //TODO: need to add robot name to the fight table
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
       fight_time: fightTime ? new Date(fightTime).getTime() : undefined,
@@ -52,6 +53,7 @@ export default function FightFormScreen() {
       outcome_type: outcomeType,
     };
 
+    //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
       if (isEditing) {
         await updateFight.mutateAsync({ fightId: fightId!, fight: fightData });
@@ -145,8 +147,8 @@ export default function FightFormScreen() {
             {createFight.isPending || updateFight.isPending
               ? 'Saving...'
               : isEditing
-              ? 'Update Fight'
-              : 'Create Fight'}
+                ? 'Update Fight'
+                : 'Create Fight'}
           </Text>
         </TouchableOpacity>
       </View>

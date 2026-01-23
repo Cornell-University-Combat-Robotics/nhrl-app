@@ -12,6 +12,7 @@ export function useBuilder(builderId: number) {
   return useQuery({
     queryKey: ['builders', builderId],
     queryFn: () => buildersDb.getBuilderById(builderId),
+    //0, null, or undefined → query doesn't run (avoids an invalid fetch)
     enabled: !!builderId,
   });
 }
