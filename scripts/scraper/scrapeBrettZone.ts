@@ -1,9 +1,9 @@
 import 'dotenv/config'
 import axios from 'axios'
 import cron from 'node-cron'
+import { getCron } from '../../src/db/cron.ts'
 import fs from 'fs'
 import path from 'path'
-
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
@@ -22,25 +22,6 @@ export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
         }
     }
     })
-
-
-
-// Define getCron here using supabaseAdmin (server-side only)
-// This is separate from src/db/cron.ts which uses anon key for frontend
-async function getCron() {
-  const { data, error } = await supabaseAdmin
-    .from('cron')
-    .select('cron_schedule')
-    .eq('job_name', 'scrapeBrettZone')
-
-  console.log('getCron (server-side):', { data, error, dataLength: data?.length });
-
-  if (error) {
-    console.error('getCron error:', error);
-    throw error;
-  }
-  return data || [];
-}
 
 //TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
@@ -260,7 +241,7 @@ async function loadAndScheduleJobs() {
   console.log('Loading and scheduling jobs...');
 
   try{
-    const cron_data = await getCron(); 
+    const cron_data = await getCron(supabaseAdmin); 
     if(cron_data && cron_data.length > 0) {
       const cron_schedule = cron_data[0].cron_schedule;
 

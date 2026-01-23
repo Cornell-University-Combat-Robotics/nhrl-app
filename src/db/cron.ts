@@ -18,8 +18,11 @@ export async function updateCron(cur_schedule: string){
     return data;
 }
 
-export async function getCron(){
-    const { data, error } = await supabase
+/**
+ * @param client : optional param -- you can pass in supabaseAdmin if you want to use the server-side client
+ */
+export async function getCron(client = supabase){
+    const { data, error } = await client
         .from('cron')
         .select('cron_schedule')
         .eq('job_name', 'scrapeBrettZone')
