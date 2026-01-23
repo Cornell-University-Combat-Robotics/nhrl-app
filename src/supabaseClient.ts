@@ -2,18 +2,14 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
-//service role key bypasses RLS security -> safely edit tables
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Create admin client with service role key for database operations
-export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         autoRefreshToken: false,
         persistSession: false,
-    },
-    realtime: {
-        params: {
-            eventsPerSecond: 10, // throttle events to max of 10 per sec -> ensures u don't overload system (e.g. if user spams buttton that changes DB)
-        }
     }
 })
+
+//DO NOT define supabaseAdmin here -> only use in scripts/scraper/scrapeBrettZone.ts, because everything here will be shipped when expo starts,
+//and we don't want to expose the service role key to the client

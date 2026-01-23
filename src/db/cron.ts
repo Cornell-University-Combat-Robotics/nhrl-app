@@ -1,4 +1,5 @@
-import { supabase } from '../supabaseClient.ts';
+import { supabase } from '../supabaseClient.ts'
+//TODO: change RLS policy to be more secure
 
 export async function updateCron(cur_schedule: string){
     // Determine the new schedule value
@@ -6,10 +7,12 @@ export async function updateCron(cur_schedule: string){
         ? '0 2 * * *'  // If currently every minute, switch to daily at 2am
         : '* * * * *'; // Otherwise, switch to every minute
     
-    const { data, error } = await supabase  
+    const { data, error } = await supabase
         .from('cron')
         .update({ cron_schedule: newSchedule })  // ← Pass object directly
-        .eq('id', 1)
+        .eq('job_name', 'scrapeBrettZone')
+
+    console.log('updateCron', data, error);
 
     if (error) throw error;
     return data;
@@ -19,7 +22,10 @@ export async function getCron(){
     const { data, error } = await supabase
         .from('cron')
         .select('cron_schedule')
-        .eq('id', 1)
+        .eq('job_name', 'scrapeBrettZone')
+
+
+    console.log('getCron', data, error);
 
     if (error) throw error;
     return data; // data is Array<{cron_schedule: text}>

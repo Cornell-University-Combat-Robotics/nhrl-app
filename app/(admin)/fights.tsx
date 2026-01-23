@@ -32,8 +32,10 @@ export default function FightsScreen() {
 
   const handleCron = async () => {
     try {
+      console.log('handleCron', cron);
       const cur_schedule = cron?.[0].cron_schedule;
       await updateCron.mutateAsync(cur_schedule);
+      console.log('successfully updated cron', cron);
     } catch (err: any) {
       Alert.alert('Error', `Failed to update season: ${err.message || 'Unknown error'}`);
     }

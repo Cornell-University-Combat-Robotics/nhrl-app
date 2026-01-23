@@ -1,11 +1,48 @@
 import 'dotenv/config'
 import axios from 'axios'
 import cron from 'node-cron'
-import { getCron } from '../../src/db/cron.ts'
 import fs from 'fs'
 import path from 'path'
-import { supabase } from '../../src/supabaseClient.ts'
 
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+// Server-side client with service role key (for scraper, cron jobs, etc.)
+// Only available when SUPABASE_SERVICE_ROLE_KEY is set (server-side only)
+export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+    },
+    realtime: {
+        params: {
+            eventsPerSecond: 10, // throttle events to max of 10 per sec -> ensures u don't overload system (e.g. if user spams buttton that changes DB)
+        }
+    }
+    })
+
+
+
+// Define getCron here using supabaseAdmin (server-side only)
+// This is separate from src/db/cron.ts which uses anon key for frontend
+async function getCron() {
+  const { data, error } = await supabaseAdmin
+    .from('cron')
+    .select('cron_schedule')
+    .eq('job_name', 'scrapeBrettZone')
+
+  console.log('getCron (server-side):', { data, error, dataLength: data?.length });
+
+  if (error) {
+    console.error('getCron error:', error);
+    throw error;
+  }
+  return data || [];
+}
+
+//TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
 const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
 const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
@@ -107,7 +144,7 @@ async function getRobotId(robotName: string): Promise<number> {
     { robot_id: 42 }  // Array with one object
   ]
   */
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('robots')
     .select('robot_id')
     .eq('robot_name', robotName)
@@ -143,7 +180,7 @@ async function upsertFight(f: any) {
 
     // try to find an existing fight by robot_id + fight_time
     // builds SQL query string
-    let existingQuery = supabase.from('fights').select('fight_id').eq('robot_id', robot_id)
+    let existingQuery = supabaseAdmin.from('fights').select('fight_id').eq('robot_id', robot_id)
     if (fight_time) existingQuery = existingQuery.eq('fight_time', fight_time)
     // executes query and gets result
     const { data: existing, error: exErr } = await existingQuery.limit(1)
@@ -159,11 +196,11 @@ async function upsertFight(f: any) {
     if (existing && existing.length > 0) {
       const fight_id = existing[0].fight_id
       // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
-      await supabase.from('fights').update(payload).eq('fight_id', fight_id)
+      await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
       log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
     } else {
       // no existing fight, so INSERT new one into DB
-      const { error } = await supabase.from('fights').insert(payload)
+      const { error } = await supabaseAdmin.from('fights').insert(payload)
       if (error) throw error
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     }
@@ -215,22 +252,70 @@ export async function runScrape() {
 
 /* Handle CRON scheduler */
 
-//store active cron tasks
-const activeTasks = new Map<string, cron.ScheduledTask>();
-
-//maps job names to functions
-//Promise<void> (a Promise that resolves to/returns nothing)
-const jobFxns: Record<string, () => Promise<void>> = {
-  'scrapeBrettZone': runScrape,
-}
-
-//TODO: clean up script?
+//active cron task
+let activeTask: cron.ScheduledTask | null = null;
 
 /** Load & schedule jobs from database */
-async function loadAndScheduleJobs() {}
+async function loadAndScheduleJobs() {
+  console.log('Loading and scheduling jobs...');
+
+  try{
+    const cron_data = await getCron(); 
+    if(cron_data && cron_data.length > 0) {
+      const cron_schedule = cron_data[0].cron_schedule;
+
+      //stop current scraper task
+      if(activeTask) {
+        activeTask.stop();
+      }
+
+      //start all tasks again
+      activeTask = cron.schedule(cron_schedule, async () => {
+        console.log('Running scraper task...');
+        await runScrape();
+      });
+
+      console.log(`[SCHEDULER STARTED] ${cron_schedule}`);
+    }else{
+      throw new Error('No cron data found');
+    }
+  }catch(error){
+    console.error('Error loading and scheduling jobs:', error);
+  }
+}
 
 /** Set up Supabase Realtime subscription */
-function setupRealtimeSubscription() {}
+function setupRealtimeSubscription() {
+  console.log('Setting up realtime subscription');
+
+  const channel = supabaseAdmin
+    .channel('cron-config-changes') //create a name of the channel to listen to
+    .on(
+      'postgres_changes',
+      {
+        event: '*', //all types of events (insert, update, delete)
+        schema:'public', 
+        table: 'cron' //name of the table to listen to
+      },
+      (payload) => {
+        //payload: data that was changed
+        console.log('Cron config changed:', payload);
+        //payload example: { event: 'INSERT', schema: 'public', table: 'cron', data: { cron_schedule: '0 2 * * *' } }
+        
+        //load and schedule jobs again, using the updated cron schedule
+        loadAndScheduleJobs();
+      }
+    )
+    .subscribe((status) => {
+      if(status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to cron-config-changes channel');
+      } else {
+        console.error('Failed to subscribe to cron-config-changes channel:', status);
+      }
+    });
+
+    return channel;
+}
 
 /** Startup of scheduler scraping service */
 async function start(){
@@ -244,7 +329,6 @@ async function start(){
   const channel = setupRealtimeSubscription();
 
   console.log('\n✨ Server is running!');
-  console.log('📊 Active jobs:', activeTasks.size);
   console.log('👂 Listening for database changes in real-time...\n');
 
   //graceful shutdown when interrupted
@@ -252,11 +336,11 @@ async function start(){
     console.log('\nShutting down...');
     
     // Stop all cron jobs
-    activeTasks.forEach((task, name) => {
-      task.stop();
-      console.log(`[SHUTDOWN] Stopped ${name}`);
-    });
+    if(activeTask) {
+      activeTask.stop();
+    }
 
+    //to be safe, unsubscribe from the channel
     channel.unsubscribe();
     console.log('Server shutdown complete');
     
@@ -264,28 +348,27 @@ async function start(){
   });
 }
 
-/** Start server */
-start().catch(error => {
-  console.error('Error starting scheduler:', error);
-  process.exit(1);
-});
 
-// CLI support: run once immediately with `npm run scrape -- --once` or `node ... --once`
-const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
-                     process.argv[1]?.includes('scrapeBrettZone')
 
-if (isMainModule) {
-  const args = process.argv.slice(2)
-  const runOnce = args.includes('--once') || args.includes('run-now')
-  if (runOnce) {
-    runScrape().then(() => process.exit(0)).catch(() => process.exit(1))
-  } else {
-    // Start scheduled job
-    const cron_data = await getCron()
-    cron.schedule(cron_data?.[0]?.cron_schedule, () => {
-      runScrape()
+// TESTING PURPOSES:  run once immediately with `npm run scrape -- --once`
+const args = process.argv.slice(2);
+const runOnce = args.includes('--once') || args.includes('run-now');
+
+if (runOnce) {
+  // Run once and exit (for GitHub Actions, manual runs, etc.)
+  runScrape()
+    .then(() => {
+      log('info', 'Scrape completed successfully');
+      process.exit(0);
     })
-
-    log('info', `Scheduler started (${cron_data?.[0]?.cron_schedule}). Target: ${API_BASE_URL}. Logs: ${LOG_FILE}`)
-  }
+    .catch((error) => {
+      log('error', 'Scrape failed', { error });
+      process.exit(1);
+    });
+} else {
+  // Start the realtime subscription service: npm run scrape
+  start().catch(error => {
+    log('error', 'Error starting scheduler', { error });
+    process.exit(1);
+  });
 }
