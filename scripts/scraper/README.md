@@ -24,3 +24,33 @@ Notes & next steps
 - Selectors are heuristic; adjust `parseFights()` if the site structure differs.
 - Consider running this script from a cron host, server, or as a GitHub Actions scheduled workflow for production.
 - For higher reliability, add retries, backoff, and more robust deduplication/unique constraints in DB.
+
+## Supabase Realtime Workflow
+
+The app leverages Supabase Realtime to enable dynamic scheduling updates without server restarts. When users update cron schedules in the React Native app, the scraper server automatically adapts to the new configuration in real-time.
+
+### **How It Works:**
+
+```
+1. Server starts
+   ↓
+2. Loads all cron configs from database
+   ↓
+3. Schedules jobs based on configs
+   ↓
+4. Subscribes to cron_config table changes
+   ↓
+5. User updates schedule in React Native app
+   ↓
+6. Database UPDATE triggers Realtime event ⚡
+   ↓
+7. Server instantly receives event
+   ↓
+8. Server stops all old jobs
+   ↓
+9. Server reloads fresh configs
+   ↓
+10. Server schedules jobs with NEW schedules 
+```
+
+This real-time synchronization ensures that schedule changes take effect immediately without requiring manual server restarts or downtime.
