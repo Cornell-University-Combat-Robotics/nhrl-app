@@ -58,8 +58,8 @@ export async function updateRobot(robotId: number, robot: Partial<Robot>) {
 export async function deleteRobot(robotId: number) {
   const { error } = await supabase
     .from('robots')
-    .eq('robot_id', robotId)
-    .delete();
+    .delete()
+    .eq('robot_id', robotId);
 
   if (error) throw error;
 }

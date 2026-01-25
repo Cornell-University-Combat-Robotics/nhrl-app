@@ -1,30 +1,29 @@
 import { useDeleteSubteam, useSubteams } from '@/src/hooks/useSubteams';
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SubteamsScreen() {
   const { data: subteams, isLoading, error } = useSubteams();
   const deleteSubteam = useDeleteSubteam();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
   const handleDelete = (subteamId: number, subteamName: string) => {
-    Alert.alert(
-      'Delete Subteam',
-      `Are you sure you want to delete ${subteamName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSubteam.mutateAsync(subteamId);
-            } catch (err: any) {
-              Alert.alert('Error', err.message);
-            }
-          },
-        },
-      ]
-    );
+    setDeleteTarget({ id: subteamId, name: subteamName });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteSubteam.mutateAsync(deleteTarget.id);
+      setDeleteModalVisible(false);
+      setDeleteTarget(null);
+      Alert.alert('Success', 'Subteam deleted successfully');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to delete subteam');
+    }
   };
 
   if (isLoading) {
@@ -65,6 +64,7 @@ export default function SubteamsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(subteam.subteam_id, subteam.subteam_name)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.deleteButton}>Delete</Text>
                 </TouchableOpacity>
@@ -75,6 +75,42 @@ export default function SubteamsScreen() {
       ) : (
         <Text style={styles.emptyText}>No subteams found. Add your first subteam!</Text>
       )}
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Subteam</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete {deleteTarget?.name}?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setDeleteModalVisible(false);
+                  setDeleteTarget(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButtonModal]}
+                onPress={confirmDelete}
+                disabled={deleteSubteam.isPending}
+              >
+                <Text style={styles.deleteButtonModalText}>
+                  {deleteSubteam.isPending ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -142,5 +178,57 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#e62020',
     fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1a1d21',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#aaa',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#444',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButtonModal: {
+    backgroundColor: '#e62020',
+  },
+  deleteButtonModalText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

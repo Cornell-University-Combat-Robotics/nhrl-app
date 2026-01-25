@@ -52,8 +52,8 @@ export async function updateSubteam(subteamId: number, subteam: Partial<Subteam>
 export async function deleteSubteam(subteamId: number) {
   const { error } = await supabase
     .from('subteams')
-    .eq('subteam_id', subteamId)
-    .delete();
+    .delete()
+    .eq('subteam_id', subteamId);
 
   if (error) throw error;
 }
