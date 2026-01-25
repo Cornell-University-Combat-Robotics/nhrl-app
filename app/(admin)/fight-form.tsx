@@ -29,7 +29,7 @@ export default function FightFormScreen() {
       setRobotId(fight.robot_id?.toString() || '');
       setOpponentName(fight.opponent_name || '');
       setCage(fight.cage?.toString() || '');
-      setFightTime(fight.fight_time ? new Date(fight.fight_time).toISOString().split('T')[0] : '');
+      setFightTime(fight.fight_time || '');
       setIsWin(fight.is_win ?? true);
       setFightDuration(fight.fight_duration?.toString() || '');
       setOutcomeType(fight.outcome_type || 'KO');
@@ -46,7 +46,7 @@ export default function FightFormScreen() {
       robot_id: parseInt(robotId),
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
-      fight_time: fightTime ? new Date(fightTime).getTime() : undefined,
+      fight_time: fightTime,
       is_win: isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,
@@ -106,12 +106,12 @@ export default function FightFormScreen() {
           keyboardType="numeric"
         />
 
-        <Text style={styles.label}>Fight Date</Text>
+        <Text style={styles.label}>Fight Time</Text>
         <TextInput
           style={styles.input}
           value={fightTime}
           onChangeText={setFightTime}
-          placeholder="YYYY-MM-DD"
+          placeholder="HH:MM:SS"
         />
 
         <View style={styles.switchContainer}>
@@ -145,8 +145,8 @@ export default function FightFormScreen() {
             {createFight.isPending || updateFight.isPending
               ? 'Saving...'
               : isEditing
-              ? 'Update Fight'
-              : 'Create Fight'}
+                ? 'Update Fight'
+                : 'Create Fight'}
           </Text>
         </TouchableOpacity>
       </View>

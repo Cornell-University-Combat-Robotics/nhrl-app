@@ -53,8 +53,8 @@ export async function updateBuilder(builderId: number, builder: Partial<Builder>
 export async function deleteBuilder(builderId: number) {
   const { error } = await supabase
     .from('builders')
-    .eq('builder_id', builderId)
-    .delete();
+    .delete()
+    .eq('builder_id', builderId);
 
   if (error) throw error;
 }
