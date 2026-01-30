@@ -23,13 +23,14 @@ export const queryClient = new QueryClient({
 /** Controls layout of all files in this level of the project (aka. root as app) */
 export default function RootLayout() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>(undefined);
-  const notifListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notifListener = useRef<Notifications.EventSubscription>(null);
+  const responseListener = useRef<Notifications.EventSubscription>(null);
 
   useEffect(() => {
     registerForPushNotificationsAsync().then((token: string | undefined) => {
       setExpoPushToken(token);
       if (token) console.log('Expo push token:', token); // or save elsewhere later
+      //save token in database
     });
 
     //add listener for when notification is received while app is in foreground
