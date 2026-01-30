@@ -1,9 +1,8 @@
 import { AuthProvider } from '@/src/contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync } from '@/src/notifications/registerForPushNotif';
+import { Stack } from 'expo-router';
+import { useEffect, useRef } from 'react';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,17 +21,11 @@ export const queryClient = new QueryClient({
 
 /** Controls layout of all files in this level of the project (aka. root as app) */
 export default function RootLayout() {
-  const [expoPushToken, setExpoPushToken] = useState<string | undefined>(undefined);
   const notifListener = useRef<Notifications.EventSubscription>(null);
   const responseListener = useRef<Notifications.EventSubscription>(null);
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token: string | undefined) => {
-      setExpoPushToken(token);
-      if (token) console.log('Expo push token:', token); // or save elsewhere later
-      //save token in database
-    });
-
+    //root layout ALWAYS mounted (acrossapp's lifetime) -> keep notif listeners here
     //add listener for when notification is received while app is in foreground
     //User action: None required; it fires automatically when the notification arrives.
     notifListener.current = Notifications.addNotificationReceivedListener((notification) => {
@@ -48,8 +41,8 @@ export default function RootLayout() {
 
     return () => {
       //runs when app closes!
-      if (notifListener.current) Notifications.removeNotificationSubscription(notifListener.current);
-      if (responseListener.current) Notifications.removeNotificationSubscription(responseListener.current);
+      notifListener.current?.remove?.();
+      responseListener.current?.remove?.();
     };
   }, []);
 
