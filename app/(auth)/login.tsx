@@ -1,6 +1,6 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
@@ -8,6 +8,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const passwordRef = useRef<TextInput | null>(null);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -29,7 +30,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -38,8 +39,10 @@ export default function LoginScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
       />
-      
+
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -47,18 +50,25 @@ export default function LoginScreen() {
         onChangeText={setPassword}
         secureTextEntry
         autoComplete="password"
+        ref={passwordRef}
+        returnKeyType="done"
+        onSubmitEditing={handleLogin}
       />
-      
-      <Button
-        title={loading ? 'Logging in...' : 'Login'}
-        onPress={handleLogin}
-        disabled={loading}
-      />
-      
-      <Button
-        title="Don't have an account? Sign up"
-        onPress={() => router.push('/(auth)/signup')}
-      />
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title={loading ? 'Logging in...' : 'Login'}
+          onPress={handleLogin}
+          disabled={loading}
+        />
+      </View>
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title="Don't have an account? Sign up"
+          onPress={() => router.push('/(auth)/signup')}
+        />
+      </View>
     </View>
   );
 }
@@ -83,5 +93,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
     fontSize: 16,
+  },
+  buttonWrapper: {
+    width: '20%',
+    alignSelf: 'center',
+    marginVertical: 8,
   },
 });
