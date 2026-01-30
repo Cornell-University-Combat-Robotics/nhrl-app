@@ -62,6 +62,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="fights"
+        options={{
+          title: 'Fights',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'flame' : 'flame-outline'} color={color} size={24} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

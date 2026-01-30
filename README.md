@@ -76,6 +76,11 @@ This app provides a comprehensive platform for managing and viewing NHRL robot f
 - `scripts/scraper/` - Web scraping service
   - `scrapeBrettZone.ts` - Main scraper implementation
 
+## Known Issues
+
+- If you encounter this error `TypeError: configs.toReversed is not a function` after running `npx expo start`,
+you need to update your node version to v20.
+
 ## Learn more
 
 - [Expo documentation](https://docs.expo.dev/)

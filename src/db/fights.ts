@@ -7,7 +7,7 @@ export interface Fight {
   cage?: number;
   fight_time?: string;
   last_updated?: string;
-  is_win: boolean;
+  is_win: string;
   fight_duration?: number;
   outcome_type: string;
   robot_name: string;

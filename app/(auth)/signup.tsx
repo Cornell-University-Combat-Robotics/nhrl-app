@@ -1,6 +1,6 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function SignupScreen() {
@@ -9,6 +9,8 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const passwordRef = useRef<TextInput | null>(null);
+  const confirmRef = useRef<TextInput | null>(null);
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -42,7 +44,7 @@ export default function SignupScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -51,8 +53,10 @@ export default function SignupScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
       />
-      
+
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -60,8 +64,11 @@ export default function SignupScreen() {
         onChangeText={setPassword}
         secureTextEntry
         autoComplete="password"
+        ref={passwordRef}
+        returnKeyType="next"
+        onSubmitEditing={() => confirmRef.current?.focus()}
       />
-      
+
       <TextInput
         style={styles.input}
         placeholder="Confirm Password"
@@ -69,18 +76,25 @@ export default function SignupScreen() {
         onChangeText={setConfirmPassword}
         secureTextEntry
         autoComplete="password"
+        ref={confirmRef}
+        returnKeyType="done"
+        onSubmitEditing={handleSignup}
       />
-      
-      <Button
-        title={loading ? 'Creating account...' : 'Sign Up'}
-        onPress={handleSignup}
-        disabled={loading}
-      />
-      
-      <Button
-        title="Already have an account? Login"
-        onPress={() => router.replace('/(auth)/login')}
-      />
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title={loading ? 'Creating account...' : 'Sign Up'}
+          onPress={handleSignup}
+          disabled={loading}
+        />
+      </View>
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title="Already have an account? Login"
+          onPress={() => router.replace('/(auth)/login')}
+        />
+      </View>
     </View>
   );
 }
@@ -105,5 +119,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
     fontSize: 16,
+  },
+  buttonWrapper: {
+    width: '20%',
+    alignSelf: 'center',
+    marginVertical: 8,
   },
 });
