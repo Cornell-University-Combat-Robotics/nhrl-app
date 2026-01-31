@@ -47,21 +47,36 @@ This app provides a comprehensive platform for managing and viewing NHRL robot f
    npm install
    ```
 
-2. Set up environment variables
+2. Install EAS CLI (for push notifications)
+
+   ```bash
+   npm install -g eas-cli
+   ```
+
+   Then login and link your project:
+   ```bash
+   eas login
+   eas project:init
+   ```
+
+   This will link your local project to an Expo project and automatically configure the `projectId` needed for push notifications.
+
+3. Set up environment variables
 
    Create a `.env` file with your Supabase credentials:
    ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
+   EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   EXPO_PUBLIC_EXPO_PROJECT_ID=your_expo_project_id
    ```
 
-3. Start the app
+4. Start the app
 
    ```bash
    npx expo start
    ```
 
-4. Run the scraper (optional)
+5. Run the scraper (optional)
 
    ```bash
    npm run scrape -- --once

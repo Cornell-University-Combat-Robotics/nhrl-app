@@ -2,15 +2,15 @@ import { supabase } from '../supabaseClient';
 
 export interface Fight {
   fight_id?: number;
+  robot_name: string;
   robot_id: number;
   opponent_name: string;
   cage?: number;
   fight_time?: string;
-  last_updated?: string;
-  is_win: string;
+  last_updated?: number;
+  is_win: string | null; // '1' or '0' or null
   fight_duration?: number;
   outcome_type: string;
-  robot_name: string;
 }
 
 export async function getAllFights() {

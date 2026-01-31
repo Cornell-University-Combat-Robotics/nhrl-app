@@ -1,6 +1,6 @@
 import { Session, User } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient';import { registerForPushNotificationsAsync } from '@/src/notifications/registerForPushNotif';
 
 interface AuthContextType {
   session: Session | null;
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Listen for auth changes
+    // Listen for auth changes: runs when user signs in/out, session restored on app reopen
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -38,6 +38,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       checkAdminRole(session?.user);
       setLoading(false);
+
+      if (session) {
+        const currentUser = session.user;
+        registerForPushNotificationsAsync().then(async (token: string | undefined) => {
+          if (token) console.log('Expo push token:', token);
+
+          if (currentUser && token) {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('expo_push_token')
+              .eq('id', currentUser.id)
+              .single();
+
+            if (error) {
+              console.error('Error getting expo push token:', error);
+              return;
+            }else{
+              console.log('Expo push token found:', data?.expo_push_token);
+            }
+
+            console.log('Expo push token:', data?.expo_push_token);
+            if (data?.expo_push_token == null) {
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .update({ expo_push_token: token })
+                .eq('id', currentUser.id);
+
+              if (insertError) {
+                console.error('Error inserting expo push token:', insertError);
+              }else{
+                console.log('Expo push token inserted successfully');
+              }
+            } else {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ expo_push_token: token })
+                .eq('id', currentUser.id);
+
+              if (updateError) {
+                console.error('Error updating expo push token:', updateError);
+              }else{
+                console.log('Expo push token updated successfully');
+              }
+            }
+          } else {
+            console.warn('User not found in auth context. Expo push token will be lost.');
+          }
+        });
+      }
     });
 
     return () => subscription.unsubscribe();

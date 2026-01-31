@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
 import * as fightsDb from '../db/fights';
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../notifications/sendPushNotif';
+import { supabase } from '../supabaseClient';
 
 export function useFights() {
   return useQuery({
@@ -26,23 +29,35 @@ export function useFight(fightId: number) {
 
 export function useCreateFight() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: fightsDb.createFight,
-    onSuccess: () => {
+    onSuccess: async (createdFight) => {
       queryClient.invalidateQueries({ queryKey: ['fights'] });
+      if(!user){
+        console.warn('Creating fight. No user found');
+        return;
+      }
+      createFightNotifBroadcast(createdFight, supabase);
     },
   });
 }
 
 export function useUpdateFight() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: ({ fightId, fight }: { fightId: number; fight: Partial<fightsDb.Fight> }) =>
+    mutationFn: ({ fightId, fight }: { fightId: number; fight: Partial<fightsDb.Fight>; isWinUpdate?: boolean }) =>
       fightsDb.updateFight(fightId, fight),
-    onSuccess: () => {
+    onSuccess: async (updatedFight, variables) => {
       queryClient.invalidateQueries({ queryKey: ['fights'] });
+      if(!user){
+        console.warn('Updating fight. No user found');
+        return;
+      }
+      updateFightNotifBroadcast(updatedFight, supabase, { isWinUpdate: variables.isWinUpdate });
     },
   });
 }

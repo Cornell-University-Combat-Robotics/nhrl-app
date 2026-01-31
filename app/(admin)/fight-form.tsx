@@ -1,3 +1,4 @@
+import { formatTime } from '@/src/utils/formatTime';
 import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights';
 import { useRobots } from '@/src/hooks/useRobots';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -55,7 +56,7 @@ export default function FightFormScreen() {
       //TODO: need to add robot name to the fight table
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
-      fight_time: fightTime,
+      fight_time: fightTime ? (formatTime(Math.floor(new Date(fightTime).getTime() / 1000)) ?? undefined) : undefined,
       is_win: isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,
@@ -64,7 +65,8 @@ export default function FightFormScreen() {
     //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
       if (isEditing) {
-        await updateFight.mutateAsync({ fightId: fightId!, fight: fightData });
+        const isWinUpdate = fight?.is_win == null && fightData.is_win != null;
+        await updateFight.mutateAsync({ fightId: fightId!, fight: fightData, isWinUpdate });
         Alert.alert('Success', 'Fight updated successfully');
       } else {
         await createFight.mutateAsync(fightData);

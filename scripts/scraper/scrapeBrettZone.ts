@@ -5,6 +5,8 @@ import { getCron } from '../../src/db/cron.ts'
 import fs from 'fs'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
+import { formatTime } from '../../src/utils/formatTime.ts'
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -97,10 +99,11 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
       const opponentName = isPlayer1 ? match.player2 : match.player1
       const cage = match.cage ? parseInt(match.cage.replace('Cage ', '')) : null
       const fightTime = match.startTime ? parseInt(match.startTime) : null
-      const isWin = isPlayer1 ? match.player1wins === '1' : match.player2wins === '1'
+      const isWin = isPlayer1 ? (match.player1wins === '1' ? 'win' : 'lose') : (match.player2wins === '1' ? 'win' : 'lose')
       const fightDuration = match.matchLength ? parseInt(match.matchLength) : null
       const outcomeType = match.winAnnotation
 
+      //TODO check against Fight interface in fights.ts
       return {
         robot_name: ourRobotName,
         opponent_name: opponentName,
@@ -137,21 +140,6 @@ async function getRobotId(robotName: string): Promise<number> {
 }
 
 /**
- * Formats epoch timestamp (seconds) to time string for PostgreSQL TIME type
- * @param timestamp - Epoch timestamp in seconds
- * @returns Formatted time string in HH:MM:SS format (24-hour, e.g., "13:16:28")
- */
-function formatTime(timestamp: number) {
-  if (!timestamp) return null
-  const date = new Date(timestamp * 1000)
-  // Format as HH:MM:SS (24-hour format) for PostgreSQL TIME type
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
-  const seconds = date.getSeconds().toString().padStart(2, '0')
-  return `${hours}:${minutes}:${seconds}`
-}
-
-/**
  * @param f - fight object
  */
 async function upsertFight(f: any) {
@@ -159,9 +147,11 @@ async function upsertFight(f: any) {
     const robot_id = await getRobotId(f.robot_name)
     const fight_time = f.fight_time || null //need to filter by fight_time cuz same robot might have multiple fights
 
+    //TODO: logic prob wrong- --might cause duplicates
+    //TODO: webscraping should not run on fights already completed 
     // try to find an existing fight by robot_id + fight_time
     // builds SQL query string
-    let existingQuery = supabaseAdmin.from('fights').select('fight_id').eq('robot_id', robot_id)
+    let existingQuery = supabaseAdmin.from('fights').select('fight_id, is_win').eq('robot_id', robot_id)
     if (fight_time) existingQuery = existingQuery.eq('fight_time', fight_time)
     // executes query and gets result
     const { data: existing, error: exErr } = await existingQuery.limit(1)
@@ -176,13 +166,25 @@ async function upsertFight(f: any) {
 
     if (existing && existing.length > 0) {
       const fight_id = existing[0].fight_id
+      const wasAlreadyComplete = existing[0].is_win != null
       // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
-      await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
+      const { error } = await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
+      if(error) throw error
+      // Only broadcast when fight just completed (was incomplete, now has result)
+      if (!wasAlreadyComplete) {
+        if(payload.is_win === null) {
+          updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
+        }else{
+          updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
+        } 
+      }
       log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
     } else {
       // no existing fight, so INSERT new one into DB
+      //NOTE: cannot use useCreateFight hook here because React hooks must be used in React components -- scrper is a Node script
       const { error } = await supabaseAdmin.from('fights').insert(payload)
       if (error) throw error
+      createFightNotifBroadcast(payload, supabaseAdmin);
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     }
   } catch (err: any) {
