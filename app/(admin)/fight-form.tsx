@@ -1,3 +1,4 @@
+import { formatTime } from '@/src/utils/formatTime';
 import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights';
 import { useRobots } from '@/src/hooks/useRobots';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -47,7 +48,7 @@ export default function FightFormScreen() {
       //TODO: need to add robot name to the fight table
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
-      fight_time: fightTime ? new Date(fightTime).getTime() : undefined,
+      fight_time: fightTime ? (formatTime(Math.floor(new Date(fightTime).getTime() / 1000)) ?? undefined) : undefined,
       is_win: isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,

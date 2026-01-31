@@ -2,14 +2,15 @@ import { supabase } from '../supabaseClient.ts';
 
 export interface Fight {
   fight_id?: number;
+  robot_name: string;
   robot_id: number;
   opponent_name: string;
   cage?: number;
-  fight_time?: number;
+  fight_time?: string;
   last_updated?: number;
-  is_win: boolean;
+  is_win: string; // '1' or '0' or null
   fight_duration?: number;
-  outcome_type: 'KO' | 'Judges Decision' | 'Tapout';
+  outcome_type?: 'KO' | 'Judges Decision' | 'Tapout';
 }
 
 export async function getAllFights() {

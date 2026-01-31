@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
 import * as fightsDb from '../db/fights';
-import { sendPushNotification } from '../notifications/sendPushNotif';
+import { createFightNotifBroadcast } from '../notifications/sendPushNotif';
 import { supabase } from '../supabaseClient';
 
 export function useFights() {
@@ -28,18 +29,17 @@ export function useFight(fightId: number) {
 
 export function useCreateFight() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: fightsDb.createFight,
-    onSuccess: () => {
+    onSuccess: async (createdFight) => {
       queryClient.invalidateQueries({ queryKey: ['fights'] });
-      //get expo push token linked to user -- TODO abstract this out cuz repeated in AuthContext
-      /* TODO
-      const { data, error } = await supabase
-        .from('profiles')
-        .eq('id'')
-      sendPushNotification(expoPushToken, 'New Fight', 'A new fight has been created');
-      */
+      if(!user){
+        console.warn('Creating fight. No user found');
+        return;
+      }
+      createFightNotifBroadcast(createdFight, supabase);
     },
   });
 }
