@@ -57,7 +57,8 @@ export default function FightFormScreen() {
     //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
       if (isEditing) {
-        await updateFight.mutateAsync({ fightId: fightId!, fight: fightData });
+        const isWinUpdate = fight?.is_win == null && fightData.is_win != null;
+        await updateFight.mutateAsync({ fightId: fightId!, fight: fightData, isWinUpdate });
         Alert.alert('Success', 'Fight updated successfully');
       } else {
         await createFight.mutateAsync(fightData);

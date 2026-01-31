@@ -8,7 +8,7 @@ export interface Fight {
   cage?: number;
   fight_time?: string;
   last_updated?: number;
-  is_win: string; // '1' or '0' or null
+  is_win: string | null; // '1' or '0' or null
   fight_duration?: number;
   outcome_type?: 'KO' | 'Judges Decision' | 'Tapout';
 }

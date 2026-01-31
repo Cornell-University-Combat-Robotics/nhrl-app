@@ -720,3 +720,95 @@
 {"timestamp":"2026-01-31T16:30:49.187Z","level":"info","message":"No fights found for Unkulunkulu"}
 {"timestamp":"2026-01-31T16:30:49.187Z","level":"info","message":"Scrape finished for all robots"}
 {"timestamp":"2026-01-31T16:30:49.187Z","level":"info","message":"Scrape completed successfully"}
+{"timestamp":"2026-01-31T16:35:56.456Z","level":"info","message":"Scrape started for 6 robots"}
+{"timestamp":"2026-01-31T16:35:56.458Z","level":"info","message":"Fetching fights for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:35:56.538Z","level":"info","message":"Parsed 3 fight(s) for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:35:57.295Z","level":"info","message":"Updated fight 28 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:35:57.456Z","level":"info","message":"Updated fight 50 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:35:57.607Z","level":"info","message":"Updated fight 51 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:35:57.607Z","level":"info","message":"Fetching fights for Capsize"}
+{"timestamp":"2026-01-31T16:35:57.626Z","level":"info","message":"Parsed 2 fight(s) for Capsize"}
+{"timestamp":"2026-01-31T16:35:57.762Z","level":"info","message":"Updated fight 52 for Capsize"}
+{"timestamp":"2026-01-31T16:35:57.909Z","level":"info","message":"Updated fight 53 for Capsize"}
+{"timestamp":"2026-01-31T16:35:57.910Z","level":"info","message":"Fetching fights for Huey"}
+{"timestamp":"2026-01-31T16:35:57.928Z","level":"info","message":"Parsed 3 fight(s) for Huey"}
+{"timestamp":"2026-01-31T16:35:58.085Z","level":"info","message":"Updated fight 54 for Huey"}
+{"timestamp":"2026-01-31T16:35:58.237Z","level":"info","message":"Updated fight 82 for Huey"}
+{"timestamp":"2026-01-31T16:35:58.378Z","level":"info","message":"Updated fight 80 for Huey"}
+{"timestamp":"2026-01-31T16:35:58.379Z","level":"info","message":"Fetching fights for Apollo"}
+{"timestamp":"2026-01-31T16:35:58.396Z","level":"info","message":"No fights found for Apollo"}
+{"timestamp":"2026-01-31T16:35:58.396Z","level":"info","message":"Fetching fights for Jormangandr"}
+{"timestamp":"2026-01-31T16:35:58.411Z","level":"info","message":"No fights found for Jormangandr"}
+{"timestamp":"2026-01-31T16:35:58.411Z","level":"info","message":"Fetching fights for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:35:58.424Z","level":"info","message":"No fights found for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:35:58.424Z","level":"info","message":"Scrape finished for all robots"}
+{"timestamp":"2026-01-31T16:35:58.424Z","level":"info","message":"Scrape completed successfully"}
+{"timestamp":"2026-01-31T16:36:59.419Z","level":"info","message":"Scrape started for 6 robots"}
+{"timestamp":"2026-01-31T16:36:59.420Z","level":"info","message":"Fetching fights for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:36:59.503Z","level":"info","message":"Parsed 3 fight(s) for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:36:59.796Z","level":"info","message":"Updated fight 28 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:36:59.948Z","level":"info","message":"Updated fight 50 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:37:00.107Z","level":"info","message":"Updated fight 51 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:37:00.108Z","level":"info","message":"Fetching fights for Capsize"}
+{"timestamp":"2026-01-31T16:37:00.131Z","level":"info","message":"Parsed 2 fight(s) for Capsize"}
+{"timestamp":"2026-01-31T16:37:00.285Z","level":"info","message":"Updated fight 52 for Capsize"}
+{"timestamp":"2026-01-31T16:37:00.457Z","level":"info","message":"Updated fight 53 for Capsize"}
+{"timestamp":"2026-01-31T16:37:00.457Z","level":"info","message":"Fetching fights for Huey"}
+{"timestamp":"2026-01-31T16:37:00.482Z","level":"info","message":"Parsed 3 fight(s) for Huey"}
+{"timestamp":"2026-01-31T16:37:00.624Z","level":"info","message":"Updated fight 54 for Huey"}
+{"timestamp":"2026-01-31T16:37:00.783Z","level":"info","message":"Updated fight 82 for Huey"}
+{"timestamp":"2026-01-31T16:37:00.931Z","level":"info","message":"Updated fight 80 for Huey"}
+{"timestamp":"2026-01-31T16:37:00.932Z","level":"info","message":"Fetching fights for Apollo"}
+{"timestamp":"2026-01-31T16:37:00.950Z","level":"info","message":"No fights found for Apollo"}
+{"timestamp":"2026-01-31T16:37:00.951Z","level":"info","message":"Fetching fights for Jormangandr"}
+{"timestamp":"2026-01-31T16:37:00.968Z","level":"info","message":"No fights found for Jormangandr"}
+{"timestamp":"2026-01-31T16:37:00.969Z","level":"info","message":"Fetching fights for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:37:00.986Z","level":"info","message":"No fights found for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:37:00.987Z","level":"info","message":"Scrape finished for all robots"}
+{"timestamp":"2026-01-31T16:37:00.987Z","level":"info","message":"Scrape completed successfully"}
+{"timestamp":"2026-01-31T16:44:36.397Z","level":"info","message":"Scrape started for 6 robots"}
+{"timestamp":"2026-01-31T16:44:36.398Z","level":"info","message":"Fetching fights for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:36.486Z","level":"info","message":"Parsed 3 fight(s) for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:37.344Z","level":"info","message":"Updated fight 28 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:37.623Z","level":"info","message":"Updated fight 50 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:37.892Z","level":"info","message":"Updated fight 51 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:37.893Z","level":"info","message":"Fetching fights for Capsize"}
+{"timestamp":"2026-01-31T16:44:37.914Z","level":"info","message":"Parsed 2 fight(s) for Capsize"}
+{"timestamp":"2026-01-31T16:44:38.164Z","level":"info","message":"Updated fight 52 for Capsize"}
+{"timestamp":"2026-01-31T16:44:38.447Z","level":"info","message":"Updated fight 53 for Capsize"}
+{"timestamp":"2026-01-31T16:44:38.447Z","level":"info","message":"Fetching fights for Huey"}
+{"timestamp":"2026-01-31T16:44:38.467Z","level":"info","message":"Parsed 3 fight(s) for Huey"}
+{"timestamp":"2026-01-31T16:44:38.685Z","level":"info","message":"Updated fight 54 for Huey"}
+{"timestamp":"2026-01-31T16:44:38.869Z","level":"info","message":"Updated fight 82 for Huey"}
+{"timestamp":"2026-01-31T16:44:39.011Z","level":"info","message":"Updated fight 80 for Huey"}
+{"timestamp":"2026-01-31T16:44:39.011Z","level":"info","message":"Fetching fights for Apollo"}
+{"timestamp":"2026-01-31T16:44:39.029Z","level":"info","message":"No fights found for Apollo"}
+{"timestamp":"2026-01-31T16:44:39.029Z","level":"info","message":"Fetching fights for Jormangandr"}
+{"timestamp":"2026-01-31T16:44:39.046Z","level":"info","message":"No fights found for Jormangandr"}
+{"timestamp":"2026-01-31T16:44:39.046Z","level":"info","message":"Fetching fights for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:44:39.061Z","level":"info","message":"No fights found for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:44:39.062Z","level":"info","message":"Scrape finished for all robots"}
+{"timestamp":"2026-01-31T16:44:39.062Z","level":"info","message":"Scrape completed successfully"}
+{"timestamp":"2026-01-31T16:44:55.877Z","level":"info","message":"Scrape started for 6 robots"}
+{"timestamp":"2026-01-31T16:44:55.878Z","level":"info","message":"Fetching fights for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:55.951Z","level":"info","message":"Parsed 3 fight(s) for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:56.195Z","level":"info","message":"Updated fight 28 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:56.347Z","level":"info","message":"Updated fight 50 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:56.498Z","level":"info","message":"Updated fight 51 for Benny R. Johm"}
+{"timestamp":"2026-01-31T16:44:56.499Z","level":"info","message":"Fetching fights for Capsize"}
+{"timestamp":"2026-01-31T16:44:56.515Z","level":"info","message":"Parsed 2 fight(s) for Capsize"}
+{"timestamp":"2026-01-31T16:44:56.664Z","level":"info","message":"Updated fight 52 for Capsize"}
+{"timestamp":"2026-01-31T16:44:56.808Z","level":"info","message":"Updated fight 53 for Capsize"}
+{"timestamp":"2026-01-31T16:44:56.809Z","level":"info","message":"Fetching fights for Huey"}
+{"timestamp":"2026-01-31T16:44:56.828Z","level":"info","message":"Parsed 3 fight(s) for Huey"}
+{"timestamp":"2026-01-31T16:44:56.978Z","level":"info","message":"Updated fight 54 for Huey"}
+{"timestamp":"2026-01-31T16:44:57.117Z","level":"info","message":"Updated fight 82 for Huey"}
+{"timestamp":"2026-01-31T16:44:57.263Z","level":"info","message":"Updated fight 80 for Huey"}
+{"timestamp":"2026-01-31T16:44:57.264Z","level":"info","message":"Fetching fights for Apollo"}
+{"timestamp":"2026-01-31T16:44:57.281Z","level":"info","message":"No fights found for Apollo"}
+{"timestamp":"2026-01-31T16:44:57.282Z","level":"info","message":"Fetching fights for Jormangandr"}
+{"timestamp":"2026-01-31T16:44:57.301Z","level":"info","message":"No fights found for Jormangandr"}
+{"timestamp":"2026-01-31T16:44:57.302Z","level":"info","message":"Fetching fights for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:44:57.318Z","level":"info","message":"No fights found for Unkulunkulu"}
+{"timestamp":"2026-01-31T16:44:57.318Z","level":"info","message":"Scrape finished for all robots"}
+{"timestamp":"2026-01-31T16:44:57.319Z","level":"info","message":"Scrape completed successfully"}

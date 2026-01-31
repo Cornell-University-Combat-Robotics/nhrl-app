@@ -49,15 +49,15 @@ export function useUpdateFight() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: ({ fightId, fight }: { fightId: number; fight: Partial<fightsDb.Fight> }) =>
+    mutationFn: ({ fightId, fight }: { fightId: number; fight: Partial<fightsDb.Fight>; isWinUpdate?: boolean }) =>
       fightsDb.updateFight(fightId, fight),
-    onSuccess: async (updatedFight) => {
+    onSuccess: async (updatedFight, variables) => {
       queryClient.invalidateQueries({ queryKey: ['fights'] });
       if(!user){
         console.warn('Updating fight. No user found');
         return;
       }
-      updateFightNotifBroadcast(updatedFight, supabase);
+      updateFightNotifBroadcast(updatedFight, supabase, { isWinUpdate: variables.isWinUpdate });
     },
   });
 }

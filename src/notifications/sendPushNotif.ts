@@ -35,13 +35,23 @@ export async function createFightNotifBroadcast(
     editFightNotifBroadcast('New Fight', msg, supabaseClient);
   }
 
-//TODO: make more informative?
 export async function updateFightNotifBroadcast(
     updatedFight: Fight,
-    supabaseClient: SupabaseClient
+    supabaseClient: SupabaseClient,
+    options?: { isWinUpdate?: boolean }
   ) {
-    const msg = `${updatedFight.robot_name ?? 'Robot'} vs ${updatedFight.opponent_name} scheduled for ${updatedFight.fight_time ? updatedFight.fight_time : 'TBD'} at Cage ${updatedFight.cage ?? '?'}.`;
-    editFightNotifBroadcast('Updated Fight', msg, supabaseClient);
+    const robotName = updatedFight.robot_name ?? 'Robot';
+    const opponentName = updatedFight.opponent_name ?? 'unknown';
+
+    if (options?.isWinUpdate) {
+      const result = (updatedFight.is_win === 'win') ? 'WIN!' : 'LOSS';
+      const outcome = updatedFight.outcome_type ? ` (${updatedFight.outcome_type})` : '';
+      const msg = `Fight Result: ${robotName} vs ${opponentName} - ${result}${outcome}`;
+      editFightNotifBroadcast('Fight Result', msg, supabaseClient);
+    } else {
+      const msg = `${robotName} vs ${opponentName} scheduled for ${updatedFight.fight_time ? updatedFight.fight_time : 'TBD'} at Cage ${updatedFight.cage ?? '?'}.`;
+      editFightNotifBroadcast('Updated Fight', msg, supabaseClient);
+    }
   }
 
 //TODO: need for delete fight?
