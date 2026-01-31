@@ -6,7 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import { formatTime } from '../../src/utils/formatTime.ts'
-import { createFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -166,7 +166,9 @@ async function upsertFight(f: any) {
     if (existing && existing.length > 0) {
       const fight_id = existing[0].fight_id
       // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
-      await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
+      const { error } = await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
+      if(error) throw error
+      updateFightNotifBroadcast(payload, supabaseAdmin);
       log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
     } else {
       // no existing fight, so INSERT new one into DB
