@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.ts';
+import { supabase } from '../supabaseClient';
 
 export interface Fight {
   fight_id?: number;
@@ -17,6 +17,7 @@ export async function getAllFights() {
   const { data, error } = await supabase
     .from('fights')
     .select('*, robots!robot_id(robot_name, robot_id)')
+    .order('fight_time', { ascending: false, nullsFirst: true })
     .order('fight_id', { ascending: false });
 
   if (error) throw error;
@@ -64,6 +65,7 @@ export async function createFight(fight: Fight) {
   
   const fightData = {
     ...fight,
+    fight_time: fight.fight_time === '' ? null : fight.fight_time,
     robot_name: robotName,
     last_updated: now,
   };
@@ -84,6 +86,7 @@ export async function updateFight(fightId: number, fight: Partial<Fight>) {
   
   const fightData = {
     ...fight,
+    fight_time: fight.fight_time === '' ? null : fight.fight_time,
     last_updated: now,
   };
 

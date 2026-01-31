@@ -42,16 +42,16 @@ export default function FightsPage() {
       <View style={styles.cardHeader}>
         <Text style={styles.robotName}>{item.robot_name || item.robots?.robot_name || 'Unknown Robot'}</Text>
         <Text style={[styles.badge, {
-          color: item.is_win === 'true' ? 'green' : 
-           item.is_win === 'false' ? 'red' : 
-           'yellow'
+          color: item.is_win === 'win' ? 'green' :
+            item.is_win === 'lose' ? 'red' :
+              'yellow'
         }]}>
           {
             item.is_win === null || item.is_win === undefined || item.is_win === 'N/A'
               ? 'Upcoming'
-              : item.is_win === 'true'
-          ? '✓ Win'
-          : '✗ Loss'
+              : item.is_win === 'win'
+                ? '✓ Win'
+                : '✗ Loss'
           }
         </Text>
       </View>
@@ -85,7 +85,7 @@ export default function FightsPage() {
           </View>
         )}
 
-        {item.outcome_type && (
+        {item.outcome_type && item.outcome_type !== 'N/A' && (
           <View style={styles.row}>
             <Text style={styles.label}>Outcome:</Text>
             <Text style={styles.value}>{item.outcome_type}</Text>
