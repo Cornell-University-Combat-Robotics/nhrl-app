@@ -18,7 +18,7 @@ export default function FightFormScreen() {
   const [opponentName, setOpponentName] = useState('');
   const [cage, setCage] = useState('');
   const [fightTime, setFightTime] = useState('');
-  const [isWin, setIsWin] = useState<'True' | 'False' | 'N/A'>('N/A');
+  const [isWin, setIsWin] = useState<'win' | 'lose' | 'N/A'>('N/A');
   const [fightDuration, setFightDuration] = useState('');
   const [outcomeType, setOutcomeType] = useState<'KO' | 'Judges Decision' | 'Tapout' | 'N/A'>('N/A');
   const [showRobotPicker, setShowRobotPicker] = useState(false);
@@ -33,9 +33,9 @@ export default function FightFormScreen() {
       setFightTime(fight.fight_time || '');
       const winVal = fight.is_win;
       if (winVal === true || winVal === 'True' || winVal === 'true') {
-        setIsWin('True');
+        setIsWin('win');
       } else if (winVal === false || winVal === 'False' || winVal === 'false') {
-        setIsWin('False');
+        setIsWin('lose');
       } else {
         setIsWin('N/A');
       }
@@ -223,7 +223,7 @@ export default function FightFormScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Win Status</Text>
-            {(['N/A', 'True', 'False'] as const).map((val) => (
+            {(['N/A', 'win', 'lose'] as const).map((val) => (
               <TouchableOpacity
                 key={val}
                 style={styles.modalOption}
