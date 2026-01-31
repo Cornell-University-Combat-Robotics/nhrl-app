@@ -27,6 +27,7 @@ export default function AboutScreen() {
           robots.slice(0, 10).map((robot: any) => (
             <View key={robot.robot_id} style={styles.robotCard}>
               <Text style={styles.robotName}>{robot.robot_name}</Text>
+              <Text style={styles.robotDetail}>Builder: {robot.builder_id}</Text>
               <Text style={styles.robotDetail}>Weight: {robot.weight_class}</Text>
               <Text style={styles.robotDetail}>Weapon: {robot.weapon}</Text>
               <Text style={styles.robotDetail}>Drive: {robot.drive}</Text>

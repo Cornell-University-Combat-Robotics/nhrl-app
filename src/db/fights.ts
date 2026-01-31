@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.ts';
+import { supabase } from '../supabaseClient';
 
 export interface Fight {
   fight_id?: number;
@@ -10,13 +10,14 @@ export interface Fight {
   last_updated?: number;
   is_win: string | null; // '1' or '0' or null
   fight_duration?: number;
-  outcome_type?: 'KO' | 'Judges Decision' | 'Tapout';
+  outcome_type: string;
 }
 
 export async function getAllFights() {
   const { data, error } = await supabase
     .from('fights')
     .select('*, robots!robot_id(robot_name, robot_id)')
+    .order('fight_time', { ascending: false, nullsFirst: true })
     .order('fight_id', { ascending: false });
 
   if (error) throw error;
@@ -46,9 +47,27 @@ export async function getFightsByRobotId(robotId: number) {
 }
 
 export async function createFight(fight: Fight) {
+  // Get current time in HH:MM:SS format
+  const now = new Date().toTimeString().split(' ')[0];
+  
+  // Fetch robot name from robots table if not provided
+  let robotName = fight.robot_name;
+  if (!robotName) {
+    const { data: robotData, error: robotError } = await supabase
+      .from('robots')
+      .select('robot_name')
+      .eq('robot_id', fight.robot_id)
+      .single();
+    
+    if (robotError) throw robotError;
+    robotName = robotData?.robot_name || '';
+  }
+  
   const fightData = {
     ...fight,
-    last_updated: Date.now(),
+    fight_time: fight.fight_time === '' ? null : fight.fight_time,
+    robot_name: robotName,
+    last_updated: now,
   };
   
   const { data, error } = await supabase
@@ -62,27 +81,51 @@ export async function createFight(fight: Fight) {
 }
 
 export async function updateFight(fightId: number, fight: Partial<Fight>) {
+  // Get current time in HH:MM:SS format
+  const now = new Date().toTimeString().split(' ')[0];
+  
   const fightData = {
     ...fight,
-    last_updated: Date.now(),
+    fight_time: fight.fight_time === '' ? null : fight.fight_time,
+    last_updated: now,
   };
+
+  // Remove undefined values
+  const cleanData = Object.fromEntries(
+    Object.entries(fightData).filter(([_, v]) => v !== undefined)
+  );
   
-  const { data, error } = await supabase
+  // Perform the update
+  const { error } = await supabase
     .from('fights')
-    .update(fightData)
+    .update(cleanData)
+    .eq('fight_id', fightId);
+
+  if (error) {
+    console.error('Update error:', error);
+    throw error;
+  }
+  
+  // Fetch the updated record
+  const { data, error: fetchError } = await supabase
+    .from('fights')
+    .select('*')
     .eq('fight_id', fightId)
-    .select()
     .single();
 
-  if (error) throw error;
+  if (fetchError) {
+    console.error('Fetch error:', fetchError);
+    throw fetchError;
+  }
+  
   return data;
 }
 
 export async function deleteFight(fightId: number) {
   const { error } = await supabase
     .from('fights')
-    .eq('fight_id', fightId)
-    .delete();
+    .delete()
+    .eq('fight_id', fightId);
 
   if (error) throw error;
 }

@@ -1,30 +1,29 @@
 import { useDeleteRobot, useRobots } from '@/src/hooks/useRobots';
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function RobotsScreen() {
   const { data: robots, isLoading, error } = useRobots();
   const deleteRobot = useDeleteRobot();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
   const handleDelete = (robotId: number, robotName: string) => {
-    Alert.alert(
-      'Delete Robot',
-      `Are you sure you want to delete ${robotName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteRobot.mutateAsync(robotId);
-            } catch (err: any) {
-              Alert.alert('Error', err.message);
-            }
-          },
-        },
-      ]
-    );
+    setDeleteTarget({ id: robotId, name: robotName });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteRobot.mutateAsync(deleteTarget.id);
+      setDeleteModalVisible(false);
+      setDeleteTarget(null);
+      Alert.alert('Success', 'Robot deleted successfully');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to delete robot');
+    }
   };
 
   if (isLoading) {
@@ -65,6 +64,7 @@ export default function RobotsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(robot.robot_id, robot.robot_name)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.deleteButton}>Delete</Text>
                 </TouchableOpacity>
@@ -81,6 +81,42 @@ export default function RobotsScreen() {
       ) : (
         <Text style={styles.emptyText}>No robots found. Add your first robot!</Text>
       )}
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Robot</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete {deleteTarget?.name}?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setDeleteModalVisible(false);
+                  setDeleteTarget(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButtonModal]}
+                onPress={confirmDelete}
+                disabled={deleteRobot.isPending}
+              >
+                <Text style={styles.deleteButtonModalText}>
+                  {deleteRobot.isPending ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -153,5 +189,57 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#e62020',
     fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1a1d21',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#aaa',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#444',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButtonModal: {
+    backgroundColor: '#e62020',
+  },
+  deleteButtonModalText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

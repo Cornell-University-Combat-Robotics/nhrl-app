@@ -3,7 +3,7 @@ import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights'
 import { useRobots } from '@/src/hooks/useRobots';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function FightFormScreen() {
   const params = useLocalSearchParams();
@@ -19,19 +19,27 @@ export default function FightFormScreen() {
   const [opponentName, setOpponentName] = useState('');
   const [cage, setCage] = useState('');
   const [fightTime, setFightTime] = useState('');
-  const [isWin, setIsWin] = useState(true);
+  const [isWin, setIsWin] = useState<'win' | 'lose' | 'N/A'>('N/A');
   const [fightDuration, setFightDuration] = useState('');
-  const [outcomeType, setOutcomeType] = useState<'KO' | 'Judges Decision' | 'Tapout'>('KO');
+  const [outcomeType, setOutcomeType] = useState<'KO' | 'Judges Decision' | 'Tapout' | 'N/A'>('N/A');
   const [showRobotPicker, setShowRobotPicker] = useState(false);
   const [showOutcomePicker, setShowOutcomePicker] = useState(false);
+  const [showIsWinPicker, setShowIsWinPicker] = useState(false);
 
   useEffect(() => {
     if (fight) {
       setRobotId(fight.robot_id?.toString() || '');
       setOpponentName(fight.opponent_name || '');
       setCage(fight.cage?.toString() || '');
-      setFightTime(fight.fight_time ? new Date(fight.fight_time).toISOString().split('T')[0] : '');
-      setIsWin(fight.is_win ?? true);
+      setFightTime(fight.fight_time || '');
+      const winVal = fight.is_win;
+      if (winVal === true || winVal === 'True' || winVal === 'true') {
+        setIsWin('win');
+      } else if (winVal === false || winVal === 'False' || winVal === 'false') {
+        setIsWin('lose');
+      } else {
+        setIsWin('N/A');
+      }
       setFightDuration(fight.fight_duration?.toString() || '');
       setOutcomeType(fight.outcome_type || 'KO');
     }
@@ -110,17 +118,22 @@ export default function FightFormScreen() {
           keyboardType="numeric"
         />
 
-        <Text style={styles.label}>Fight Date</Text>
+        <Text style={styles.label}>Fight Time</Text>
         <TextInput
           style={styles.input}
           value={fightTime}
           onChangeText={setFightTime}
-          placeholder="YYYY-MM-DD"
+          placeholder="HH:MM:SS"
         />
 
         <View style={styles.switchContainer}>
           <Text style={styles.label}>Win?</Text>
-          <Switch value={isWin} onValueChange={setIsWin} />
+          <TouchableOpacity
+            style={styles.pickerButton}
+            onPress={() => setShowIsWinPicker(true)}
+          >
+            <Text style={styles.pickerButtonText}>{isWin}</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.label}>Outcome Type *</Text>
@@ -187,7 +200,7 @@ export default function FightFormScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Outcome Type</Text>
-            {(['KO', 'Judges Decision', 'Tapout'] as const).map((outcome) => (
+            {(['N/A', 'KO', 'Judges Decision', 'Tapout'] as const).map((outcome) => (
               <TouchableOpacity
                 key={outcome}
                 style={styles.modalOption}
@@ -202,6 +215,31 @@ export default function FightFormScreen() {
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setShowOutcomePicker(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={showIsWinPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Win Status</Text>
+            {(['N/A', 'win', 'lose'] as const).map((val) => (
+              <TouchableOpacity
+                key={val}
+                style={styles.modalOption}
+                onPress={() => {
+                  setIsWin(val);
+                  setShowIsWinPicker(false);
+                }}
+              >
+                <Text style={styles.modalOptionText}>{val}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowIsWinPicker(false)}
             >
               <Text style={styles.modalCloseButtonText}>Cancel</Text>
             </TouchableOpacity>
