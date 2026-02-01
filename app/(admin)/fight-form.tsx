@@ -32,9 +32,9 @@ export default function FightFormScreen() {
       setCage(fight.cage?.toString() || '');
       setFightTime(fight.fight_time || '');
       const winVal = fight.is_win;
-      if (winVal === true || winVal === 'True' || winVal === 'true') {
+      if (winVal === 'win') {
         setIsWin('win');
-      } else if (winVal === false || winVal === 'False' || winVal === 'false') {
+      } else if (winVal === 'lose') {
         setIsWin('lose');
       } else {
         setIsWin('N/A');
@@ -52,15 +52,14 @@ export default function FightFormScreen() {
 
     const fightData = {
       robot_id: parseInt(robotId),
-      //TODO: need to add robot name to the fight table
+      robot_name: robots?.find((r: any) => r.robot_id.toString() === robotId)?.robot_name || '',
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
-      fight_time: fightTime ? fightTime : undefined,
-      is_win: isWin,
+      fight_time: fightTime || undefined,
+      is_win: isWin === 'N/A' ? null : isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,
     };
-
     //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
       if (isEditing) {
