@@ -1,5 +1,7 @@
 import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights';
 import { useRobots } from '@/src/hooks/useRobots';
+import { updateFightNotifBroadcast } from '@/src/notifications/sendPushNotif';
+import { supabase } from '@/src/supabaseClient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -65,6 +67,12 @@ export default function FightFormScreen() {
       if (isEditing) {
         const isWinUpdate = fight?.is_win == null && fightData.is_win != null;
         await updateFight.mutateAsync({ fightId: fightId!, fight: fightData, isWinUpdate });
+        if (isWinUpdate) {
+          updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: true });
+        } else {
+          updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: false });
+        }
+
         Alert.alert('Success', 'Fight updated successfully');
       } else {
         await createFight.mutateAsync(fightData);
