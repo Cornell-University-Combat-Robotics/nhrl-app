@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   buttonWrapper: {
-    width: '20%',
+    width: '50%',
     alignSelf: 'center',
     marginVertical: 8,
   },
