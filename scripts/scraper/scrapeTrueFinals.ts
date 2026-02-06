@@ -10,6 +10,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Server-side client with service role key (for scraper, cron jobs, etc.)
 // Only available when SUPABASE_SERVICE_ROLE_KEY is set (server-side only)
+//TODO: rn supabaseAdmin is from scrapeBrettZone.ts -- need to normalize
 export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
         autoRefreshToken: false,
@@ -156,6 +157,19 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 continue;
             }
 
+            /*
+            Goal: prevent duplicates
+            Database:
+            If match already ended (check database's win status), then IGNORE.
+            Else, if any field (fight_time, cage, win status) changes, then UPDATE.
+            Else, if no field changed, then IGNORE.
+
+            Notifications:
+            If THIS scraping cycle concludes a match: then "New Fight" notif.
+            Else, if any field (fight_time, cage, win status) changes, then "Updated Fight" notif.
+            Else, if no field changed, then NO notif.
+            */
+
             let is_win;
             if(our_win_status === '0' && opponent_win_status === '0') {
               is_win = null;
@@ -181,10 +195,9 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               }
               await createFightNotifBroadcast(payload, supabaseAdmin);
             }else{
+              //each fight triplet (robot, opponent, competition) is constrained to be unique in supabase
               //check if fight time, cage, or win status has changed
               if(prev.is_win !== is_win || prev.fight_time !== fight_time || prev.cage !== cage) {
-
-                //TODO: check if manually inserting makes is_win null or N/A
                 //fight is complete
                 const { error } = await supabaseAdmin.from('fights')
                   .upsert(payload, {
@@ -205,26 +218,6 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 continue;
               }
             }
-            //each fight triplet (robot, opponent, competition) is constrained to be unique in supabase
-            //update supabase
-
-            //TODO: rn supabaseAdmin is from scrapeBrettZone.ts -- need to normalize
-            //TOOD: change manual updates + scrape berettzone + scrape true finals to only upsert
-            /*
-            Goal: prevent duplicates
-            Database:
-            If match already ended (check database's win status), then IGNORE.
-            Else, if any field (fight_time, cage, win status) changes, then UPDATE.
-            Else, if no field changed, then IGNORE.
-
-            Notifications:
-            If THIS scraping cycle concludes a match: then "New Fight" notif.
-            Else, if any field (fight_time, cage, win status) changes, then "Updated Fight" notif.
-            Else, if no field changed, then NO notif.
-
-            Edge case: isit possible for a match to get deleted? -- manual update
-            */
-
         };
     }catch(error) {
         console.error('Error scraping True Finals:', error);
@@ -259,8 +252,6 @@ if (runOnce) {
   })();
 }
 
-//TODO: duplicate updates
-//TODO: run on cron schedule + supabase realtime
 
-//TODO: duplicate updates
 //TODO: run on cron schedule + supabase realtime
+//TOOD: change manual updates + scrape berettzone + scrape true finals to only upsert

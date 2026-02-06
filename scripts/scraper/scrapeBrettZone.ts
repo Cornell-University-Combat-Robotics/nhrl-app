@@ -8,6 +8,7 @@ import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import { formatTime } from '../../src/utils/formatTime.ts'
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
+import type { Fight } from '../../src/db/fights.ts';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -50,6 +51,7 @@ function ensureLogDir() {
  * @param ourRobotName - The name of the robot we're querying for (to determine opponent and win/loss)
  * 
  * API fields:
+ * - "tournamentID": "nhrl_may25_12lb" //TODO: normalize to "may 25"
  * - "cage": "Cage 4"
  * - "player1": "Carmen", "player1clean": "carmen"
  * - "player2": "Benny R. Johm", "player2clean": "bennyrjohm"
@@ -61,19 +63,8 @@ function ensureLogDir() {
  * Note: our robot could be either player1 or player2
  */
 function parseFightsFromApi(matches: any[], ourRobotName: string) {
-  //define fight fields
-  //TODO: once fights are completed, we DON'T wanna waste time re-updating!!
-  let fights: Array<{
-    robot_name: string,
-    opponent_name: string,
-    cage: number | null,
-    fight_time: number | null
-    is_win: boolean | null
-    fight_duration: number | null
-    outcome_type: string | null
-  }> = []
 
-  fights = matches
+  const fights : Fight[] = matches
     .filter((match) => {
       //skips invalid arrays
       if(!match.player1 || !match.player2) {
@@ -90,9 +81,11 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
       const isWin = isPlayer1 ? (match.player1wins === '1' ? 'win' : 'lose') : (match.player2wins === '1' ? 'win' : 'lose')
       const fightDuration = match.matchLength ? parseInt(match.matchLength) : null
       const outcomeType = match.winAnnotation
+      const competition = match.tournamentID
 
       //TODO check against Fight interface in fights.ts
       return {
+        competition: competition,
         robot_name: ourRobotName,
         opponent_name: opponentName,
         cage: cage,
@@ -133,56 +126,51 @@ async function getRobotId(robotName: string): Promise<number> {
 async function upsertFight(f: any) {
   try {
     const robot_id = await getRobotId(f.robot_name)
-    const fight_time = f.fight_time || null //need to filter by fight_time cuz same robot might have multiple fights
-
-    //TODO: logic prob wrong- --might cause duplicates
-    //TODO: webscraping should not run on fights already completed 
-    // try to find an existing fight by robot_id + fight_time
-    // builds SQL query string
-    let existingQuery = supabaseAdmin.from('fights').select('fight_id, is_win').eq('robot_id', robot_id)
-    if (fight_time) existingQuery = existingQuery.eq('fight_time', fight_time)
-    // executes query and gets result
-    const { data: existing, error: exErr } = await existingQuery.limit(1)
-    if (exErr) throw exErr
-    
     const now = Math.floor(Date.now() / 1000)
     const payload = {
-      robot_id: robot_id,
+      robot_id,
       ...f,
       last_updated: formatTime(now)
     }
 
-    if (existing && existing.length > 0) {
-      const fight_id = existing[0].fight_id
-      const wasAlreadyComplete = existing[0].is_win != null
-      // UPDATE fights SET <payload> WHERE fight_id = <fight_id>
-      const { error } = await supabaseAdmin.from('fights').update(payload).eq('fight_id', fight_id)
-      if(error) throw error
-      // Only broadcast when fight just completed (was incomplete, now has result)
-      if (!wasAlreadyComplete) {
-        if(payload.is_win === null) {
-          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
-        }else{
-          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
-        } 
-      }
-      log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
-    } else {
-      // no existing fight, so INSERT new one into DB
-      //NOTE: cannot use useCreateFight hook here because React hooks must be used in React components -- scrper is a Node script
-      const { error } = await supabaseAdmin.from('fights').insert(payload)
-      if (error) throw error
-      await createFightNotifBroadcast(payload, supabaseAdmin);
+    // Find existing by triplet (same as upsert conflict) to decide insert vs update and notif type
+    const { data: existing, error: exErr } = await supabaseAdmin
+      .from('fights')
+      .select('fight_id, is_win')
+      .eq('robot_name', f.robot_name)
+      .eq('opponent_name', f.opponent_name ?? '')
+      .eq('competition', f.competition)
+      .maybeSingle()
+    if (exErr) throw exErr
+
+    const wasAlreadyComplete = existing?.is_win != null
+
+    const { error: upsertErr } = await supabaseAdmin
+      .from('fights')
+      .upsert(payload, { onConflict: 'robot_name, opponent_name, competition' })
+    if (upsertErr) throw upsertErr
+
+    if (!existing) {
+      await createFightNotifBroadcast(payload, supabaseAdmin)
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
+    } else {
+      if (!wasAlreadyComplete) {
+        if (payload.is_win === null) {
+          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
+        } else {
+          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true })
+        }
+      }
+      log('info', `Updated fight ${existing.fight_id} for ${f.robot_name}`)
     }
   } catch (err: any) {
     const errorMessage = err?.message || err?.toString() || JSON.stringify(err)
     const errorDetails = err?.code || err?.details || err?.hint || ''
-    log('error', 'upsertFight failed', { 
-      err: errorMessage, 
+    log('error', 'upsertFight failed', {
+      err: errorMessage,
       details: errorDetails,
       code: err?.code,
-      fight: f 
+      fight: f
     })
   }
 }

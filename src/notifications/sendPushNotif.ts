@@ -1,6 +1,8 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-//import { SupabaseClient } from '@supabase/supabase-js';
+import pkg from '@supabase/supabase-js';
 import type { Fight } from '../db/fights.ts';
+
+/** Type-only so this file works in both Node (scraper) and Expo; Node ESM doesn't expose named exports from CJS. */
+type SupabaseClientType = import('@supabase/supabase-js').SupabaseClient;
 
 /**
  * Purpose: Sends push notification to a single device
@@ -30,7 +32,7 @@ export async function sendPushNotification(expoPushToken: string, title: string,
 
 export async function createFightNotifBroadcast(
     createdFight: Fight,
-    supabaseClient: InstanceType<typeof SupabaseClient>
+    supabaseClient: SupabaseClientType
   ) {
     const msg = `${createdFight.robot_name ?? 'Robot'} vs ${createdFight.opponent_name} scheduled for ${createdFight.fight_time ? createdFight.fight_time : 'TBD'} at Cage ${createdFight.cage ?? '?'}.`;
     await editFightNotifBroadcast('New Fight', msg, supabaseClient);
@@ -38,7 +40,7 @@ export async function createFightNotifBroadcast(
 
 export async function updateFightNotifBroadcast(
     updatedFight: Fight,
-    supabaseClient: InstanceType<typeof SupabaseClient>,
+    supabaseClient: SupabaseClientType,
     options?: { isWinUpdate?: boolean }
   ) {
     const robotName = updatedFight.robot_name ?? 'Robot';
@@ -63,7 +65,7 @@ type ProfilePushRow = { id: string; expo_push_token: string | null };
   export async function editFightNotifBroadcast(
     title: string,
     msg: string,
-    supabaseClient: InstanceType<typeof SupabaseClient>
+    supabaseClient: SupabaseClientType
   ) {
     const { data: profiles, error } = await supabaseClient
       .from('profiles')
