@@ -1,9 +1,9 @@
 import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
 import { useDeleteFight, useFights } from '@/src/hooks/useFights';
-import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
+import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet,Text, TouchableOpacity, View } from 'react-native';
 
 export default function FightsScreen() {
   const { data: fights, isLoading, error } = useFights();
@@ -41,6 +41,33 @@ export default function FightsScreen() {
     }
   }
 
+  const sections = useMemo(() => {
+    if (!fights) return [];
+
+    const grouped = fights.reduce((acc: any, fight: any) => {
+      const comp = (fight.competition || 'unspecified').toLowerCase();
+      if (!acc[comp]) {
+        acc[comp] = [];
+      }
+      acc[comp].push(fight);
+      return acc;
+    }, {});
+
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      if (a === 'unspecified') return 1;
+      if (b === 'unspecified') return -1;
+      
+      const dateA = parseCompetitionDate(a);
+      const dateB = parseCompetitionDate(b);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sortedKeys.map(key => ({
+      title: key,
+      data: grouped[key]
+    }));
+  }, [fights]);
+
   if (isLoading || loadingCron) {
     return (
       <View style={styles.center}>
@@ -58,24 +85,34 @@ export default function FightsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <TouchableOpacity
-        style={styles.cronButton}
-        onPress={() => handleCron()}
-      >
-        <Text style={styles.cronButtonText}>{cron?.[0]?.cron_schedule === '* * * * *' ? 'Deactivate Season' : 'Activate Season'}</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <SectionList
+        sections={sections}
+        keyExtractor={(item: any) => `${item.fight_id}`}
+        ListHeaderComponent={() => (
+          <>
+            <TouchableOpacity
+              style={styles.cronButton}
+              onPress={() => handleCron()}
+            >
+              <Text style={styles.cronButtonText}>{cron?.[0]?.cron_schedule === '* * * * *' ? 'Deactivate Season' : 'Activate Season'}</Text>
+            </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push('/(admin)/fight-form')}
-      >
-        <Text style={styles.addButtonText}>+ Add New Fight</Text>
-      </TouchableOpacity>
-
-      {fights && fights.length > 0 ? (
-        fights.map((fight: any) => (
-          <View key={fight.fight_id} style={styles.card}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => router.push('/(admin)/fight-form')}
+            >
+              <Text style={styles.addButtonText}>+ Add New Fight</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        renderSectionHeader={({ section: { title } }: { section: { title: string } }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>{title}</Text>
+          </View>
+        )}
+        renderItem={({ item: fight }: { item: any }) => (
+          <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.fightTitle}>
                 {fight.robots?.robot_name || 'Unknown'} vs {fight.opponent_name}
@@ -107,10 +144,12 @@ export default function FightsScreen() {
               <Text style={styles.detail}>Duration: {fight.fight_duration}s</Text>
             )}
           </View>
-        ))
-      ) : (
-        <Text style={styles.emptyText}>No fights found. Add your first fight!</Text>
-      )}
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No fights found. Add your first fight!</Text>
+        }
+        stickySectionHeadersEnabled={false}
+      />
 
       <Modal
         visible={deleteModalVisible}
@@ -147,8 +186,9 @@ export default function FightsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
+
 }
 
 const styles = StyleSheet.create({
@@ -185,6 +225,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#25292e',
+  },
+  sectionHeaderText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4CAF50',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   card: {
     backgroundColor: '#1a1d21',

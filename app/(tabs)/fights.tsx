@@ -1,7 +1,7 @@
 import { useFights } from '@/src/hooks/useFights';
-import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
 
 export default function FightsPage() {
   const { data: fights, isLoading, error } = useFights();
@@ -37,6 +37,33 @@ export default function FightsPage() {
       </View>
     );
   }
+
+  const sections = useMemo(() => {
+    if (!fights) return [];
+
+    const grouped = fights.reduce((acc: any, fight: any) => {
+      const comp = (fight.competition || 'unspecified').toLowerCase();
+      if (!acc[comp]) {
+        acc[comp] = [];
+      }
+      acc[comp].push(fight);
+      return acc;
+    }, {});
+
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      if (a === 'unspecified') return 1;
+      if (b === 'unspecified') return -1;
+      
+      const dateA = parseCompetitionDate(a);
+      const dateB = parseCompetitionDate(b);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sortedKeys.map(key => ({
+      title: key,
+      data: grouped[key]
+    }));
+  }, [fights]);
 
   const renderFightCard = ({ item }: { item: any }) => (
     <View style={styles.card}>
@@ -98,13 +125,19 @@ export default function FightsPage() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={fights}
-        keyExtractor={(item) => `${item.fight_id}`}
+      <SectionList
+        sections={sections}
+        keyExtractor={(item: any) => `${item.fight_id}`}
         renderItem={renderFightCard}
+        renderSectionHeader={({ section: { title } }: { section: { title: string } }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>{title}</Text>
+          </View>
+        )}
         contentContainerStyle={styles.listContent}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+        stickySectionHeadersEnabled={false}
       />
     </View>
   );
@@ -124,6 +157,18 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    marginBottom: 8,
+    backgroundColor: '#25292e',
+  },
+  sectionHeaderText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffd33d',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   card: {
     backgroundColor: '#1d1f23',

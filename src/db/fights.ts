@@ -11,6 +11,7 @@ export interface Fight {
   is_win?: string | null; // '1' or '0' or null
   fight_duration?: number;
   outcome_type?: string;
+  competition?: string;
 }
 
 export async function getAllFights() {
