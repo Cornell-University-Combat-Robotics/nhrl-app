@@ -1,8 +1,8 @@
+import { createClient } from '@supabase/supabase-js';
+import * as cheerio from "cheerio";
+import 'dotenv/config';
+import puppeteer from 'puppeteer';
 import { log } from '../../src/utils/log.ts';
-import axios from "axios"; //axios: js library for making HTTP requests
-import * as cheerio from "cheerio"; //cheerio: js library for parsing HTML
-import { createClient } from '@supabase/supabase-js'
-import 'dotenv/config'
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -21,16 +21,23 @@ export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
     }
     })
 
-//set up
-//TODO: scrape for huey too
-const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition'; //TODO: pass in tournament ID for future competitions
+// TODO: scrape for huey too; pass tournament ID for future competitions
+const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
-const response_12LB = await axios.get(BASE_URL_12LB, {timeout: 15_000}); 
-const response_3LB = await axios.get(BASE_URL_3LB, {timeout: 15_000}); 
-const html_12LB = response_12LB.data;
-const html_3LB = response_3LB.data;
-const $_12LB = cheerio.load(html_12LB); //$_12LB: function that wraps the HTML/DOM to use Cheerio methods
-const $_3LB = cheerio.load(html_3LB); 
+
+/** Fetch full HTML after JS has run (Option A: headless browser, then Cheerio). */
+async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
+  const browser = await puppeteer.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.waitForSelector('button[id^="game-EX-"]', { timeout: 25_000 });
+    const html = await page.content();
+    return html;
+  } finally {
+    await browser.close();
+  }
+} 
 
 //TODO: repeated from scrapeBrettZone.ts -- clean up
 const CRC_ROBOTS = [
@@ -42,13 +49,14 @@ const CRC_ROBOTS = [
     'Unkulunkulu' */
   ]
 
-  
+//TODO: add QUALIFYING INFO (like Q1-02)
 //workflow: scrape each fight, update DB once found
 /*
 HTML format:
 <button type="button" id="game-EX-2fb9b326c7a34ed2-outer" class="...">
   <div class="relative isolate flex h-6..."> (CAGE TIME CONTAINER)
     <div ...>
+    <div ....>{QUALIFYING INFO (like Q1-02)}</div>
     <div class="absolute bottom-[5px]...">
         <div class="skew-x-[27deg] scale-x-125">{CAGE NUMBER}</div>
     <div class="absolute bottom-[3px]...>{TIME INFORMATION (format: HH:MM AM/PM)}</div>
@@ -75,16 +83,20 @@ HTML format:
 //TODO: check if true finals updates more accurately than brettzone
 async function scrapeTrueFinals($: cheerio.CheerioAPI) {
     try{
+        console.log("=============DEBUG LOG: scrape true finals================");
         const rows = $('button[id^="game-EX-"]');
-
+        console.log("rows length", rows.length);
         for(let i=0; i<rows.length; i++){
             //wraps raw DOM node in Cheerio object to use Cheerio methods
             const $row = $(rows[i]);
 
             //TODO: change to children().first()
             const $cage_time_container = $row.children().first(); //get first child of row, same as eq(0)
-            const cage_number = $cage_time_container.children().eq(1).children().first().text(); 
-            const fight_time = $cage_time_container.children().eq(2).text(); 
+            //log('info', 'cage_time_container HTML', { html: $cage_time_container.html() });
+            const cage_number = $cage_time_container.children().eq(2).children().first().text();
+            const cage = cage_number ? parseInt(cage_number.replace(/^C/i, ''), 10) : null;
+            const fight_time = $cage_time_container.children().eq(3).text();
+            //log('info', 'fight_time element HTML', { html: $cage_time_container.children().eq(3).html() }); 
 
             const $robot_info_container = $row.children().eq(1);
             const robot_names : string[] = []; //same as robot_names = new Array<string>();
@@ -95,7 +107,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             });
             console.log("=============DEBUG LOG================");
             console.log("robot_names", robot_names);
-            console.log("cage_number", cage_number);
+            console.log("cage_number", cage_number, "cage (parsed)", cage);
             console.log("fight_time", fight_time);
 
             //identify robot vs opponent
@@ -108,7 +120,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
 
             //update supabase
             const payload = {
-                cage: cage_number,
+                cage: !Number.isNaN(cage) ? cage : null,
                 fight_time: fight_time,
                 robot_name: our_robot_name,
                 opponent_name: opponent_robot_name,
@@ -132,26 +144,23 @@ const args = process.argv.slice(2);
 const runOnce = args.includes('--once') || args.includes('run-now');
 
 if (runOnce) {
-  // Run once and exit (for GitHub Actions, manual runs, etc.)
-  console.log("scraping 12lb");
-  scrapeTrueFinals($_12LB)
-    .then(() => {
+  (async () => {
+    try {
+      log('info', 'Fetching 12lb exhibition (Puppeteer)...');
+      const html_12LB = await fetchHtmlWithPuppeteer(BASE_URL_12LB);
+      const $_12LB = cheerio.load(html_12LB);
+      await scrapeTrueFinals($_12LB);
+
+      log('info', 'Fetching 3lb exhibition (Puppeteer)...');
+      const html_3LB = await fetchHtmlWithPuppeteer(BASE_URL_3LB);
+      const $_3LB = cheerio.load(html_3LB);
+      await scrapeTrueFinals($_3LB);
+
       log('info', 'Scrape completed successfully');
       process.exit(0);
-    })
-    .catch((error) => {
+    } catch (error) {
       log('error', 'Scrape failed', { error });
       process.exit(1);
-    });
-
-    console.log("scraping 3lb");
-    scrapeTrueFinals($_3LB)
-      .then(() => {
-        log('info', 'Scrape completed successfully');
-        process.exit(0);
-      })
-      .catch((error) => {
-        log('error', 'Scrape failed', { error });
-        process.exit(1);
-      });
+    }
+  })();
 }
