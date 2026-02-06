@@ -2,6 +2,7 @@ import { useCreateFight, useFight, useUpdateFight } from '@/src/hooks/useFights'
 import { useRobots } from '@/src/hooks/useRobots';
 import { updateFightNotifBroadcast } from '@/src/notifications/sendPushNotif';
 import { supabase } from '@/src/supabaseClient';
+import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -32,7 +33,7 @@ export default function FightFormScreen() {
       setRobotId(fight.robot_id?.toString() || '');
       setOpponentName(fight.opponent_name || '');
       setCage(fight.cage?.toString() || '');
-      setFightTime(fight.fight_time || '');
+      setFightTime(formatTimeForDisplay(fight.fight_time));
       const winVal = fight.is_win;
       if (winVal === 'win') {
         setIsWin('win');
@@ -113,6 +114,7 @@ export default function FightFormScreen() {
           value={opponentName}
           onChangeText={setOpponentName}
           placeholder="Enter opponent name"
+          placeholderTextColor="#888"
         />
 
         <Text style={styles.label}>Cage</Text>
@@ -121,6 +123,7 @@ export default function FightFormScreen() {
           value={cage}
           onChangeText={setCage}
           placeholder="Enter cage number"
+          placeholderTextColor="#888"
           keyboardType="numeric"
         />
 
@@ -129,7 +132,8 @@ export default function FightFormScreen() {
           style={styles.input}
           value={fightTime}
           onChangeText={setFightTime}
-          placeholder="HH:MM:SS"
+          placeholder="HH:MM"
+          placeholderTextColor="#888"
         />
 
         <View style={styles.switchContainer}>
@@ -156,6 +160,7 @@ export default function FightFormScreen() {
           value={fightDuration}
           onChangeText={setFightDuration}
           placeholder="Enter duration in seconds"
+          placeholderTextColor="#888"
           keyboardType="numeric"
         />
 

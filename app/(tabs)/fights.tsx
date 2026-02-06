@@ -1,4 +1,5 @@
 import { useFights } from '@/src/hooks/useFights';
+import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -74,7 +75,7 @@ export default function FightsPage() {
         {item.fight_time && (
           <View style={styles.row}>
             <Text style={styles.label}>Time:</Text>
-            <Text style={styles.value}>{item.fight_time}</Text>
+            <Text style={styles.value}>{formatTimeForDisplay(item.fight_time)}</Text>
           </View>
         )}
 

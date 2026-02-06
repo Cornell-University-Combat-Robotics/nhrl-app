@@ -1,5 +1,6 @@
 import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
 import { useDeleteFight, useFights } from '@/src/hooks/useFights';
+import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -99,7 +100,7 @@ export default function FightsScreen() {
             {fight.cage && <Text style={styles.detail}>Cage: {fight.cage}</Text>}
             {fight.fight_time && (
               <Text style={styles.detail}>
-                Fight Time: {fight.fight_time}
+                Fight Time: {formatTimeForDisplay(fight.fight_time)}
               </Text>
             )}
             {fight.fight_duration && (
