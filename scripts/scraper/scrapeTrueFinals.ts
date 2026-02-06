@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as cheerio from "cheerio";
 import 'dotenv/config';
 import puppeteer from 'puppeteer';
+import { createFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
@@ -27,12 +28,12 @@ const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibitio
 
 /** Fetch full HTML after JS has run (Option A: headless browser, then Cheerio). */
 async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: true }); //launches headless browser
   try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForSelector('button[id^="game-EX-"]', { timeout: 25_000 });
-    const html = await page.content();
+    const page = await browser.newPage(); //new tab in browser
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 }); //goes to URL and waits for DOM to load
+    await page.waitForSelector('button[id^="game-EX-"]', { timeout: 25_000 }); //waits for button with id starting with "game-EX-" to load
+    const html = await page.content(); //returns the HTML of the page
     return html;
   } finally {
     await browser.close();
@@ -123,7 +124,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 cage: !Number.isNaN(cage) ? cage : null,
                 fight_time: fight_time,
                 robot_name: our_robot_name,
-                opponent_name: opponent_robot_name,
+                opponent_name: opponent_robot_name
             }
             //TODO: rn supabaseAdmin is from scrapeBrettZone.ts -- need to normalize
             const { error } = await supabaseAdmin.from('fights').insert(payload);
@@ -131,6 +132,8 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 console.error('Error updating supabase:', error);
                 continue;
             }
+            console.log("creating fight", payload);
+            await createFightNotifBroadcast(payload, supabaseAdmin);
         };
     }catch(error) {
         console.error('Error scraping True Finals:', error);

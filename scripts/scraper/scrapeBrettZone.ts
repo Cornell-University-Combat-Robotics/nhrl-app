@@ -161,9 +161,9 @@ async function upsertFight(f: any) {
       // Only broadcast when fight just completed (was incomplete, now has result)
       if (!wasAlreadyComplete) {
         if(payload.is_win === null) {
-          updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
+          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
         }else{
-          updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
+          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
         } 
       }
       log('info', `Updated fight ${fight_id} for ${f.robot_name}`)
@@ -172,7 +172,7 @@ async function upsertFight(f: any) {
       //NOTE: cannot use useCreateFight hook here because React hooks must be used in React components -- scrper is a Node script
       const { error } = await supabaseAdmin.from('fights').insert(payload)
       if (error) throw error
-      createFightNotifBroadcast(payload, supabaseAdmin);
+      await createFightNotifBroadcast(payload, supabaseAdmin);
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     }
   } catch (err: any) {

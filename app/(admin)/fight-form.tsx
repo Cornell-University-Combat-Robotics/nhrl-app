@@ -69,9 +69,9 @@ export default function FightFormScreen() {
         const isWinUpdate = fight?.is_win == null && fightData.is_win != null;
         await updateFight.mutateAsync({ fightId: fightId!, fight: fightData, isWinUpdate });
         if (isWinUpdate) {
-          updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: true });
+          await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: true });
         } else {
-          updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: false });
+          await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: false });
         }
 
         Alert.alert('Success', 'Fight updated successfully');
