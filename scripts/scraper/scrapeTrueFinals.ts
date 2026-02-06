@@ -121,6 +121,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             }
             const opponent_robot_name = robot_names.find(name => name !== our_robot_name);
 
+            //TODO: in supabase, i've set each fight pair (robot, opponent) to be unique 
             //update supabase
             const payload = {
                 cage: !Number.isNaN(cage) ? cage : null,
@@ -168,3 +169,6 @@ if (runOnce) {
     }
   })();
 }
+
+//TODO: duplicate updates
+//TODO: run on cron schedule + supabase realtime
