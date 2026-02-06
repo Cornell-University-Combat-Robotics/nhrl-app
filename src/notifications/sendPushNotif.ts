@@ -1,5 +1,4 @@
-import pkg from '@supabase/supabase-js';
-const { SupabaseClient } = pkg;
+import { SupabaseClient } from '@supabase/supabase-js';
 //import { SupabaseClient } from '@supabase/supabase-js';
 import type { Fight } from '../db/fights.ts';
 
