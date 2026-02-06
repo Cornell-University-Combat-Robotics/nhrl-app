@@ -2,6 +2,7 @@ import 'dotenv/config'
 import axios from 'axios'
 import cron from 'node-cron'
 import { getCron } from '../../src/db/cron.ts'
+import { log } from '../../src/utils/log.ts';
 import fs from 'fs'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
@@ -41,19 +42,6 @@ const CRC_ROBOTS = [
 
 function ensureLogDir() {
   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-}
-
-/**
- * Creates machine-readable logs in scraper.log (good for parsing/analysis).
- * Console output for quick debugging.
- */
-function log(level: 'info' | 'warn' | 'error', message: string, meta?: any) {
-  ensureLogDir()
-  const timestamp = new Date().toISOString()
-  const payload = { timestamp, level, message, meta }
-  fs.appendFileSync(LOG_FILE, JSON.stringify(payload) + '\n')
-  // also print to stdout for dev
-  console[level === 'error' ? 'error' : 'log'](`${timestamp} [${level}] ${message}`)
 }
 
 /**

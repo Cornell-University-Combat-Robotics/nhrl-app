@@ -10,7 +10,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "scrape": "ts-node scripts/scraper/scrapeBrettZone.ts"
+    "scrape": "ts-node scripts/scraper/scrapeBrettZone.ts",
+    "scrape-truefinals": "ts-node scripts/scraper/scrapeTrueFinals.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
