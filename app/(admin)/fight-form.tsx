@@ -27,6 +27,7 @@ export default function FightFormScreen() {
   const [showRobotPicker, setShowRobotPicker] = useState(false);
   const [showOutcomePicker, setShowOutcomePicker] = useState(false);
   const [showIsWinPicker, setShowIsWinPicker] = useState(false);
+  const [competition, setCompetition] = useState('feb 26');
 
   useEffect(() => {
     if (fight) {
@@ -44,6 +45,7 @@ export default function FightFormScreen() {
       }
       setFightDuration(fight.fight_duration?.toString() || '');
       setOutcomeType(fight.outcome_type || 'KO');
+      setCompetition(fight.competition || 'feb 26');
     }
   }, [fight]);
 
@@ -62,6 +64,7 @@ export default function FightFormScreen() {
       is_win: isWin === 'N/A' ? null : isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,
+      competition: competition?.toLowerCase() || undefined,
     };
     //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
     try {
@@ -133,6 +136,15 @@ export default function FightFormScreen() {
           value={fightTime}
           onChangeText={setFightTime}
           placeholder="HH:MM"
+          placeholderTextColor="#888"
+        />
+
+        <Text style={styles.label}>Competition</Text>
+        <TextInput
+          style={styles.input}
+          value={competition}
+          onChangeText={setCompetition}
+          placeholder="feb 26"
           placeholderTextColor="#888"
         />
 
