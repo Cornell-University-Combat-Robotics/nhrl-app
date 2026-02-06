@@ -106,10 +106,12 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 const temp_name = $slot.children().first().children().first().children().first().text();
                 robot_names.push(temp_name);
             });
+            /*
             console.log("=============DEBUG LOG================");
             console.log("robot_names", robot_names);
             console.log("cage_number", cage_number, "cage (parsed)", cage);
             console.log("fight_time", fight_time);
+            */
 
             //identify robot vs opponent
             const our_robot_name = robot_names.find(name => CRC_ROBOTS.includes(name));
@@ -132,7 +134,6 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 console.error('Error updating supabase:', error);
                 continue;
             }
-            console.log("creating fight", payload);
             await createFightNotifBroadcast(payload, supabaseAdmin);
         };
     }catch(error) {

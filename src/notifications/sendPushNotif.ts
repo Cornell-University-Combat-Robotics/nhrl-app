@@ -32,7 +32,6 @@ export async function createFightNotifBroadcast(
     createdFight: Fight,
     supabaseClient: InstanceType<typeof SupabaseClient>
   ) {
-    console.log("creating fight notif broadcast", createdFight);
     const msg = `${createdFight.robot_name ?? 'Robot'} vs ${createdFight.opponent_name} scheduled for ${createdFight.fight_time ? createdFight.fight_time : 'TBD'} at Cage ${createdFight.cage ?? '?'}.`;
     await editFightNotifBroadcast('New Fight', msg, supabaseClient);
   }
@@ -66,22 +65,18 @@ type ProfilePushRow = { id: string; expo_push_token: string | null };
     msg: string,
     supabaseClient: InstanceType<typeof SupabaseClient>
   ) {
-    console.log("editing fight notif broadcast", title, msg);
     const { data: profiles, error } = await supabaseClient
       .from('profiles')
       .select('id, expo_push_token')
       .not('expo_push_token', 'is', null);
   
-    console.log("profiles", profiles);
     if (error) {
       console.error('Error fetching push tokens for broadcast:', error);
       return;
     }
   
-    console.log("profiles after error check", profiles);
     for (const p of (profiles ?? []) as ProfilePushRow[]) {
       if (p.expo_push_token) {
-        console.log("sending push notification to", p.expo_push_token);
         await sendPushNotification(p.expo_push_token, title, msg);
       }
     }
