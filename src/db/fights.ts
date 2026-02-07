@@ -1,16 +1,16 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.ts';
 
 export interface Fight {
   fight_id?: number;
-  robot_name: string;
-  robot_id: number;
-  opponent_name: string;
-  cage?: number;
+  robot_name?: string;
+  robot_id?: number;
+  opponent_name?: string;
+  cage?: number | null;
   fight_time?: string;
   last_updated?: number;
-  is_win: string | null; // '1' or '0' or null
+  is_win?: string | null; // '1' or '0' or null
   fight_duration?: number;
-  outcome_type: string;
+  outcome_type?: string;
   competition?: string;
 }
 

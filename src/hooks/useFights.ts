@@ -39,7 +39,7 @@ export function useCreateFight() {
         console.warn('Creating fight. No user found');
         return;
       }
-      createFightNotifBroadcast(createdFight, supabase);
+      await createFightNotifBroadcast(createdFight, supabase);
     },
   });
 }

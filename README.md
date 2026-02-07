@@ -78,9 +78,24 @@ This app provides a comprehensive platform for managing and viewing NHRL robot f
 
 5. Run the scraper (optional)
 
-   ```bash
-   npm run scrape -- --once
-   ```
+   See [Scrapers](#scrapers) below for all scrape commands.
+
+## Scrapers
+
+The app uses two scrapers: **BrettZone** (API) and **TrueFinals** (Puppeteer + Cheerio). They share one cron schedule and Supabase Realtime subscription.
+
+**Puppeteer / Chrome:** The TrueFinals scraper uses Puppeteer. On first `npm install`, Puppeteer downloads a bundled Chromium. If you run in an environment where that fails (e.g. some CI or restricted systems), install a Chrome/Chromium binary and ensure it’s on `PATH`, or see [Puppeteer docs](https://pptr.dev/guides/configuration) for `executablePath` and related options.
+
+**Scrape commands:**
+
+| Command | Description |
+|--------|-------------|
+| `npm run scrape` | Start the scheduler: run both scrapers on the cron from the DB and listen for `cron` table changes. |
+| `npm run scrape -- --once` | Run both scrapers once, then exit. |
+| `npm run scrape-brettzone` | Run only the BrettZone scraper once, then exit. |
+| `npm run scrape-truefinals` | Run only the TrueFinals scraper once (12lb + 3lb), then exit. |
+
+For scheduled runs you need `SUPABASE_SERVICE_ROLE_KEY` in `.env` (and a `cron` row in the DB with `job_name: 'scrapeBrettZone'`).
 
 ## Project Structure
 
@@ -89,7 +104,11 @@ This app provides a comprehensive platform for managing and viewing NHRL robot f
   - `supabaseClient.ts` - Supabase configuration
   - `sql/` - Database schema and migrations
 - `scripts/scraper/` - Web scraping service
-  - `scrapeBrettZone.ts` - Main scraper implementation
+  - `scheduler.ts` - Shared cron + Supabase Realtime
+  - `runScrapers.ts` - Entry point for both scrapers
+  - `scrapeBrettZone.ts` - BrettZone API scraper
+  - `scrapeTrueFinals.ts` - TrueFinals (Puppeteer) scraper
+  - `runBrettZoneOnce.ts` / `runTrueFinalsOnce.ts` - Single-scraper one-off runners
 
 ## Known Issues
 

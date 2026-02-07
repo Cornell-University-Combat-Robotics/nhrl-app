@@ -1,5 +1,8 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import pkg from '@supabase/supabase-js';
 import type { Fight } from '../db/fights.ts';
+
+/** Type-only so this file works in both Node (scraper) and Expo; Node ESM doesn't expose named exports from CJS. */
+type SupabaseClientType = import('@supabase/supabase-js').SupabaseClient;
 
 /**
  * Purpose: Sends push notification to a single device
@@ -29,15 +32,15 @@ export async function sendPushNotification(expoPushToken: string, title: string,
 
 export async function createFightNotifBroadcast(
     createdFight: Fight,
-    supabaseClient: SupabaseClient
+    supabaseClient: SupabaseClientType
   ) {
     const msg = `${createdFight.robot_name ?? 'Robot'} vs ${createdFight.opponent_name} scheduled for ${createdFight.fight_time ? createdFight.fight_time : 'TBD'} at Cage ${createdFight.cage ?? '?'}.`;
-    editFightNotifBroadcast('New Fight', msg, supabaseClient);
+    await editFightNotifBroadcast('New Fight', msg, supabaseClient);
   }
 
 export async function updateFightNotifBroadcast(
     updatedFight: Fight,
-    supabaseClient: SupabaseClient,
+    supabaseClient: SupabaseClientType,
     options?: { isWinUpdate?: boolean }
   ) {
     const robotName = updatedFight.robot_name ?? 'Robot';
@@ -47,13 +50,14 @@ export async function updateFightNotifBroadcast(
       const result = (updatedFight.is_win === 'win') ? 'WIN!' : 'LOSS';
       const outcome = updatedFight.outcome_type ? ` (${updatedFight.outcome_type})` : '';
       const msg = `Fight Result: ${robotName} vs ${opponentName} - ${result}${outcome}`;
-      editFightNotifBroadcast('Fight Result', msg, supabaseClient);
+      await editFightNotifBroadcast('Fight Result', msg, supabaseClient);
     } else {
       const msg = `${robotName} vs ${opponentName} scheduled for ${updatedFight.fight_time ? updatedFight.fight_time : 'TBD'} at Cage ${updatedFight.cage ?? '?'}.`;
-      editFightNotifBroadcast('Updated Fight', msg, supabaseClient);
-    }
+      await editFightNotifBroadcast('Updated Fight', msg, supabaseClient);
+    } 
   }
 
+type ProfilePushRow = { id: string; expo_push_token: string | null };
 //TODO: need for delete fight?
 /**
  * Purpose: Sends push notif to ALL users when any fight edit is made (e.g. insert, update, delete)
@@ -61,7 +65,7 @@ export async function updateFightNotifBroadcast(
   export async function editFightNotifBroadcast(
     title: string,
     msg: string,
-    supabaseClient: SupabaseClient
+    supabaseClient: SupabaseClientType
   ) {
     const { data: profiles, error } = await supabaseClient
       .from('profiles')
@@ -73,9 +77,9 @@ export async function updateFightNotifBroadcast(
       return;
     }
   
-    for (const p of profiles ?? []) {
+    for (const p of (profiles ?? []) as ProfilePushRow[]) {
       if (p.expo_push_token) {
-        sendPushNotification(p.expo_push_token, title, msg);
+        await sendPushNotification(p.expo_push_token, title, msg);
       }
     }
   }
