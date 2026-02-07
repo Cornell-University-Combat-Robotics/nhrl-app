@@ -1,31 +1,12 @@
 import 'dotenv/config'
 import axios from 'axios'
-import cron from 'node-cron'
-import { getCron } from '../../src/db/cron.ts'
 import { log } from '../../src/utils/log.ts';
 import fs from 'fs'
 import path from 'path'
-import { createClient } from '@supabase/supabase-js'
 import { formatTime } from '../../src/utils/formatTime.ts'
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
 import type { Fight } from '../../src/db/fights.ts';
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-// Server-side client with service role key (for scraper, cron jobs, etc.)
-// Only available when SUPABASE_SERVICE_ROLE_KEY is set (server-side only)
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-    },
-    realtime: {
-        params: {
-            eventsPerSecond: 10, // throttle events to max of 10 per sec -> ensures u don't overload system (e.g. if user spams buttton that changes DB)
-        }
-    }
-    })
+import { supabaseAdmin } from './scheduler.ts'
 
 //TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
@@ -206,128 +187,4 @@ export async function runScrape() {
   }
 
   log('info', 'Scrape finished for all robots')
-}
-
-
-/* Handle CRON scheduler */
-
-//active cron task
-let activeTask: cron.ScheduledTask | null = null;
-
-/** Load & schedule jobs from database */
-async function loadAndScheduleJobs() {
-  console.log('Loading and scheduling jobs...');
-
-  try{
-    const cron_data = await getCron(supabaseAdmin); 
-    if(cron_data && cron_data.length > 0) {
-      const cron_schedule = cron_data[0].cron_schedule;
-
-      //stop current scraper task
-      if(activeTask) {
-        activeTask.stop();
-      }
-
-      //start all tasks again
-      activeTask = cron.schedule(cron_schedule, async () => {
-        console.log('Running scraper task...');
-        await runScrape();
-      });
-
-      console.log(`[SCHEDULER STARTED] ${cron_schedule}`);
-    }else{
-      throw new Error('No cron data found');
-    }
-  }catch(error){
-    console.error('Error loading and scheduling jobs:', error);
-  }
-}
-
-/** Set up Supabase Realtime subscription */
-function setupRealtimeSubscription() {
-  console.log('Setting up realtime subscription');
-
-  const channel = supabaseAdmin
-    .channel('cron-config-changes') //create a name of the channel to listen to
-    .on(
-      'postgres_changes',
-      {
-        event: '*', //all types of events (insert, update, delete)
-        schema:'public', 
-        table: 'cron' //name of the table to listen to
-      },
-      (payload) => {
-        //payload: data that was changed
-        console.log('Cron config changed:', payload);
-        //payload example: { event: 'INSERT', schema: 'public', table: 'cron', data: { cron_schedule: '0 2 * * *' } }
-        
-        //load and schedule jobs again, using the updated cron schedule
-        loadAndScheduleJobs();
-      }
-    )
-    .subscribe((status) => {
-      if(status === 'SUBSCRIBED') {
-        console.log('Successfully subscribed to cron-config-changes channel');
-      } else {
-        console.error('Failed to subscribe to cron-config-changes channel:', status);
-      }
-    });
-
-    return channel;
-}
-
-/** Startup of scheduler scraping service */
-async function start(){
-  console.log('Starting realtime dynamic cron server...');
-  console.log('Time:', new Date().toISOString());
-  
-  //initial load of schedules
-  await loadAndScheduleJobs();
-
-  //subscribe to realtime changes in db
-  const channel = setupRealtimeSubscription();
-
-  console.log('\n✨ Server is running!');
-  console.log('👂 Listening for database changes in real-time...\n');
-
-  //graceful shutdown when interrupted
-  process.on('SIGINT', async () => {
-    console.log('\nShutting down...');
-    
-    // Stop all cron jobs
-    if(activeTask) {
-      activeTask.stop();
-    }
-
-    //to be safe, unsubscribe from the channel
-    channel.unsubscribe();
-    console.log('Server shutdown complete');
-    
-    process.exit(0);
-  });
-}
-
-
-
-// TESTING PURPOSES:  run once immediately with `npm run scrape -- --once`
-const args = process.argv.slice(2);
-const runOnce = args.includes('--once') || args.includes('run-now');
-
-if (runOnce) {
-  // Run once and exit (for GitHub Actions, manual runs, etc.)
-  runScrape()
-    .then(() => {
-      log('info', 'Scrape completed successfully');
-      process.exit(0);
-    })
-    .catch((error) => {
-      log('error', 'Scrape failed', { error });
-      process.exit(1);
-    });
-} else {
-  // Start the realtime subscription service: npm run scrape
-  start().catch(error => {
-    log('error', 'Error starting scheduler', { error });
-    process.exit(1);
-  });
 }

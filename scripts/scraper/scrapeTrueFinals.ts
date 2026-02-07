@@ -1,27 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
 import * as cheerio from "cheerio";
 import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-// Server-side client with service role key (for scraper, cron jobs, etc.)
-// Only available when SUPABASE_SERVICE_ROLE_KEY is set (server-side only)
-//TODO: rn supabaseAdmin is from scrapeBrettZone.ts -- need to normalize
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-    },
-    realtime: {
-        params: {
-            eventsPerSecond: 10, // throttle events to max of 10 per sec -> ensures u don't overload system (e.g. if user spams buttton that changes DB)
-        }
-    }
-    })
+import { supabaseAdmin } from './scheduler.ts';
 
 // TODO: scrape for huey too; pass tournament ID for future competitions
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
@@ -225,33 +207,15 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
     }
 }
 
-// TESTING PURPOSES:  run once immediately with `npm run scrape -- --once`
-// TODO: abstract out for both scrapers to use
-const args = process.argv.slice(2);
-const runOnce = args.includes('--once') || args.includes('run-now');
+/** Run 12lb and 3lb TrueFinals scrapes. Used by scheduler and runScrapers. */
+export async function runScrapeTrueFinals() {
+  log('info', 'Fetching 12lb exhibition (Puppeteer)...');
+  const html_12LB = await fetchHtmlWithPuppeteer(BASE_URL_12LB);
+  const $_12LB = cheerio.load(html_12LB);
+  await scrapeTrueFinals($_12LB);
 
-if (runOnce) {
-  (async () => {
-    try {
-      log('info', 'Fetching 12lb exhibition (Puppeteer)...');
-      const html_12LB = await fetchHtmlWithPuppeteer(BASE_URL_12LB);
-      const $_12LB = cheerio.load(html_12LB);
-      await scrapeTrueFinals($_12LB);
-
-      log('info', 'Fetching 3lb exhibition (Puppeteer)...');
-      const html_3LB = await fetchHtmlWithPuppeteer(BASE_URL_3LB);
-      const $_3LB = cheerio.load(html_3LB);
-      await scrapeTrueFinals($_3LB);
-
-      log('info', 'Scrape completed successfully');
-      process.exit(0);
-    } catch (error) {
-      log('error', 'Scrape failed', { error });
-      process.exit(1);
-    }
-  })();
+  log('info', 'Fetching 3lb exhibition (Puppeteer)...');
+  const html_3LB = await fetchHtmlWithPuppeteer(BASE_URL_3LB);
+  const $_3LB = cheerio.load(html_3LB);
+  await scrapeTrueFinals($_3LB);
 }
-
-
-//TODO: run on cron schedule + supabase realtime
-//TOOD: change manual updates + scrape berettzone + scrape true finals to only upsert
