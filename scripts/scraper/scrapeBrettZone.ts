@@ -6,7 +6,7 @@ import path from 'path'
 import { formatTime } from '../../src/utils/formatTime.ts'
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
 import type { Fight } from '../../src/db/fights.ts';
-import { supabaseAdmin } from './scheduler.ts'
+import { supabaseAdmin, getRobotId } from './scheduler.ts'
 
 //TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
@@ -81,32 +81,12 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
 }
 
 /**
- * Get robot_id from database. Throws if robot doesn't exist.
- * All robots CRC owns should already exist in the database.
- */
-async function getRobotId(robotName: string): Promise<number> {
-  /*
-  data = [
-    { robot_id: 42 }  // Array with one object
-  ]
-  */
-  const { data, error } = await supabaseAdmin
-    .from('robots')
-    .select('robot_id')
-    .eq('robot_name', robotName)
-    .limit(1)
-  
-  if(error) throw error
-  if(data && data.length > 0) return data[0].robot_id
-  throw new Error(`Robot ${robotName} not found`)
-}
-
-/**
  * @param f - fight object
  */
 async function upsertFight(f: any) {
   try {
-    const robot_id = await getRobotId(f.robot_name)
+    const robot_id = await getRobotId(f.robot_name);
+    if (robot_id === null) throw new Error(`Robot ${f.robot_name} not found`);
     const now = Math.floor(Date.now() / 1000)
     const payload = {
       robot_id,

@@ -22,6 +22,21 @@ export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
 
 let activeTask: cron.ScheduledTask | null = null;
 
+/**
+ * Look up robot_id from robots table by robot_name. Returns null if not found or on error.
+ * Shared by BrettZone and TrueFinals scrapers.
+ */
+export async function getRobotId(robotName: string): Promise<number | null> {
+  const { data, error } = await supabaseAdmin
+    .from('robots')
+    .select('robot_id')
+    .eq('robot_name', robotName)
+    .limit(1);
+  if (error) return null;
+  if (data && data.length > 0) return (data[0] as { robot_id: number }).robot_id;
+  return null;
+}
+
 export type ScraperFn = () => Promise<void>;
 
 /**

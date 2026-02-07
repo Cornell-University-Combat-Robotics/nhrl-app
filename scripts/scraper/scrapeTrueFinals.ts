@@ -3,7 +3,7 @@ import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-import { supabaseAdmin } from './scheduler.ts';
+import { supabaseAdmin, getRobotId } from './scheduler.ts';
 
 // TODO: scrape for huey too; pass tournament ID for future competitions
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
@@ -159,7 +159,14 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               is_win = our_win_status === 'W' ? 'win' : 'lose';
             }
 
+            const robot_id = await getRobotId(our_robot_name);
+            if (robot_id === null) {
+              log('info', `Robot "${our_robot_name}" not found in robots table, skipping fight`);
+              continue;
+            }
+
             const payload = {
+              robot_id,
               cage: !Number.isNaN(cage) ? cage : null,
               fight_time: fight_time,
               is_win: is_win,
