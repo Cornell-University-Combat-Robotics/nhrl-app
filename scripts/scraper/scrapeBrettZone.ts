@@ -1,30 +1,14 @@
-import 'dotenv/config'
-import axios from 'axios'
-import { log } from '../../src/utils/log.ts';
-import fs from 'fs'
-import path from 'path'
-import { formatTime } from '../../src/utils/formatTime.ts'
-import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
+import axios from 'axios';
+import 'dotenv/config';
+import path from 'path';
 import type { Fight } from '../../src/db/fights.ts';
-import { supabaseAdmin, getRobotId } from './scheduler.ts'
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
+import { formatTime } from '../../src/utils/formatTime.ts';
+import { log } from '../../src/utils/log.ts';
+import { getRobotId, supabaseAdmin } from './scraperHelper.js';
+import { CRC_ROBOTS } from './scraperHelper.js';
 
-//TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
-const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
-const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
-
-const CRC_ROBOTS = [
-  'Benny R. Johm',
-  'Capsize',
-  'Huey',
-  'Apollo',
-  'Jormangandr',
-  'Unkulunkulu'
-]
-
-function ensureLogDir() {
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-}
 
 /**
  * Parse fight data from API JSON response. A clean-up fxn.
@@ -32,7 +16,7 @@ function ensureLogDir() {
  * @param ourRobotName - The name of the robot we're querying for (to determine opponent and win/loss)
  * 
  * API fields:
- * - "tournamentID": "nhrl_may25_12lb" //TODO: normalize to "may 25"
+ * - "tournamentName": "NHRL February 2026 12lb"
  * - "cage": "Cage 4"
  * - "player1": "Carmen", "player1clean": "carmen"
  * - "player2": "Benny R. Johm", "player2clean": "bennyrjohm"
@@ -62,9 +46,8 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
       const isWin = isPlayer1 ? (match.player1wins === '1' ? 'win' : 'lose') : (match.player2wins === '1' ? 'win' : 'lose')
       const fightDuration = match.matchLength ? parseInt(match.matchLength) : null
       const outcomeType = match.winAnnotation
-      const competition = match.tournamentID
+      const competition = match.tournamentName
 
-      //TODO check against Fight interface in fights.ts
       return {
         competition: competition,
         robot_name: ourRobotName,

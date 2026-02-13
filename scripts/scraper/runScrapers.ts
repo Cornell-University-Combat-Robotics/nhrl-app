@@ -1,6 +1,6 @@
 import { log } from '../../src/utils/log.ts';
-import { runWithScheduler } from './scheduler.ts';
 import { runScrape } from './scrapeBrettZone.ts';
+import { runWithScheduler } from './scraperHelper.js';
 import { runScrapeTrueFinals } from './scrapeTrueFinals.ts';
 
 const args = process.argv.slice(2);

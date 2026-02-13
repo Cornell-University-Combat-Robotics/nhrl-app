@@ -1,8 +1,8 @@
+import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 import cron from 'node-cron';
-import { createClient } from '@supabase/supabase-js';
-import { getCron } from '../../src/db/cron.ts';
-import { log } from '../../src/utils/log.ts';
+import { getCron } from '../../src/db/cron.js';
+import { log } from '../../src/utils/log.js';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -149,3 +149,12 @@ export async function runWithScheduler(
     await start(scrapers);
   }
 }
+
+export const CRC_ROBOTS = [
+  'Benny R. Johm',
+  'Capsize',
+  'Huey',
+  'Apollo',
+  'Jormangandr',
+  'Unkulunkulu'
+]

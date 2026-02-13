@@ -3,12 +3,11 @@ import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-import { supabaseAdmin, getRobotId } from './scheduler.ts';
+import { getRobotId, supabaseAdmin } from './scraperHelper.js';
+import { CRC_ROBOTS } from './scraperHelper.js';
 
-// TODO: scrape for huey too; pass tournament ID for future competitions
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
-const COMPETITION = 'feb 26'; //TODO: change every competition
 
 /** Fetch full HTML after JS has run (Option A: headless browser, then Cheerio). */
 async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
@@ -36,16 +35,6 @@ function fightTimeTo24h(timeStr: string): string {
   if (!isPm && h === 12) h = 0;
   return `${h.toString().padStart(2, '0')}:${m}`;
 }
-
-//TODO: repeated from scrapeBrettZone.ts -- clean up
-const CRC_ROBOTS = [
-    'Benny R. Johm',
-    'Capsize',
-    'Huey',
-/*     'Apollo',
-    'Jormangandr',
-    'Unkulunkulu' */
-  ]
 
 //TODO: add QUALIFYING INFO (like Q1-02)
 //workflow: scrape each fight, update DB once found
@@ -83,6 +72,19 @@ HTML format:
 //TODO: check if true finals updates more accurately than brettzone
 async function scrapeTrueFinals($: cheerio.CheerioAPI) {
     try{
+        const competition = $('body')
+          .children().first()
+          .children().first()
+          .children().first()
+          .children().first()
+          .children().eq(1)
+          .children().first()
+          .children().eq(1)
+          .children().first()
+          .children().first()
+          .children().eq(1)
+          .text();
+        console.log("competition", competition);
         console.log("=============DEBUG LOG: scrape true finals================");
         const rows = $('button[id^="game-EX-"]');
         console.log("rows length", rows.length);
@@ -131,7 +133,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               .select('is_win, cage, fight_time')
               .eq('robot_name', our_robot_name)
               .eq('opponent_name', opponent_robot_name)
-              .eq('competition', COMPETITION)
+              .eq('competition', competition)
               .maybeSingle(); //returns null if no match found, not error
 
             if(prev_error) {
@@ -172,7 +174,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               is_win: is_win,
               robot_name: our_robot_name,
               opponent_name: opponent_robot_name,
-              competition: COMPETITION
+              competition: competition
             }
 
             if(!prev){

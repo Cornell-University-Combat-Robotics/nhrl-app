@@ -29,17 +29,11 @@ export function useFight(fightId: number) {
 
 export function useCreateFight() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: fightsDb.createFight,
-    onSuccess: async (createdFight) => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['fights'] });
-      if(!user){
-        console.warn('Creating fight. No user found');
-        return;
-      }
-      await createFightNotifBroadcast(createdFight, supabase);
     },
   });
 }
