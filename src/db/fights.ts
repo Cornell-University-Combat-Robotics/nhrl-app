@@ -1,4 +1,6 @@
-import { supabase } from '../supabaseClient.ts';
+import { useState } from 'react';
+import { supabase } from '../supabaseClient';
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../notifications/sendPushNotif';
 
 export interface Fight {
   fight_id?: number;
@@ -6,8 +8,8 @@ export interface Fight {
   robot_id?: number;
   opponent_name?: string;
   cage?: number | null;
-  fight_time?: string;
-  last_updated?: number;
+  fight_time?: string | null;
+  last_updated?: string;
   is_win?: string | null; // '1' or '0' or null
   fight_duration?: number;
   outcome_type?: string;
@@ -71,13 +73,42 @@ export async function createFight(fight: Fight) {
     last_updated: now,
   };
   
+  //essentially the same as upsert, but expanded out to allow for different notification types
+  //check if fight already exists
   const { data, error } = await supabase
     .from('fights')
-    .insert(fightData)
-    .select()
-    .single();
+    .select('fight_id, is_win')
+    .eq('robot_name', robotName)
+    .eq('opponent_name', fight.opponent_name)
+    .eq('competition', fight.competition)
+    .maybeSingle(); //maybeSingle because we don't know if the fight exists yet
 
   if (error) throw error;
+  if (data) {
+    //fight already exists
+    //just update fight ≠≠ create new one
+    const { error: updateError } = await supabase
+      .from('fights')
+      .update(fightData)
+      .eq('fight_id', data.fight_id);
+    if (updateError) throw updateError;
+
+    if(data.is_win == null && fightData.is_win != null) {
+      await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: true });
+    } else {
+      await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: false });
+    }
+    return data;
+  } else {
+    //fight doesn't exist yet, so create new one
+    const { error: insertError } = await supabase
+      .from('fights')
+      .insert(fightData);
+    if (insertError) throw insertError;
+    await createFightNotifBroadcast(fightData, supabase);
+    return data;
+  }
+
   return data;
 }
 

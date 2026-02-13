@@ -32,7 +32,7 @@ function ensureLogDir() {
  * @param ourRobotName - The name of the robot we're querying for (to determine opponent and win/loss)
  * 
  * API fields:
- * - "tournamentID": "nhrl_may25_12lb" //TODO: normalize to "may 25"
+ * - "tournamentName": "NHRL February 2026 12lb"
  * - "cage": "Cage 4"
  * - "player1": "Carmen", "player1clean": "carmen"
  * - "player2": "Benny R. Johm", "player2clean": "bennyrjohm"
@@ -62,7 +62,7 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
       const isWin = isPlayer1 ? (match.player1wins === '1' ? 'win' : 'lose') : (match.player2wins === '1' ? 'win' : 'lose')
       const fightDuration = match.matchLength ? parseInt(match.matchLength) : null
       const outcomeType = match.winAnnotation
-      const competition = match.tournamentID
+      const competition = match.tournamentName
 
       //TODO check against Fight interface in fights.ts
       return {
