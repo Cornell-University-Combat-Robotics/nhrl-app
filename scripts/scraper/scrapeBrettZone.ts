@@ -1,30 +1,14 @@
-import 'dotenv/config'
-import axios from 'axios'
-import { log } from '../../src/utils/log.ts';
-import fs from 'fs'
-import path from 'path'
-import { formatTime } from '../../src/utils/formatTime.ts'
-import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts'
+import axios from 'axios';
+import 'dotenv/config';
+import path from 'path';
 import type { Fight } from '../../src/db/fights.ts';
-import { supabaseAdmin, getRobotId } from './scheduler.ts'
+import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
+import { formatTime } from '../../src/utils/formatTime.ts';
+import { log } from '../../src/utils/log.ts';
+import { getRobotId, supabaseAdmin } from './scraperHelper.js';
+import { CRC_ROBOTS } from './scraperHelper.js';
 
-//TODO: on expo side, also make sure that any edits are server side
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
-const LOG_DIR = process.env.SCRAPER_LOG_DIR || path.resolve(process.cwd(), 'logs')
-const LOG_FILE = process.env.SCRAPER_LOG_PATH || path.join(LOG_DIR, 'scraper.log')
-
-const CRC_ROBOTS = [
-  'Benny R. Johm',
-  'Capsize',
-  'Huey',
-  'Apollo',
-  'Jormangandr',
-  'Unkulunkulu'
-]
-
-function ensureLogDir() {
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-}
 
 /**
  * Parse fight data from API JSON response. A clean-up fxn.
@@ -64,7 +48,6 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
       const outcomeType = match.winAnnotation
       const competition = match.tournamentName
 
-      //TODO check against Fight interface in fights.ts
       return {
         competition: competition,
         robot_name: ourRobotName,

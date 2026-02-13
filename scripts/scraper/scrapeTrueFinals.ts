@@ -3,9 +3,9 @@ import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-import { supabaseAdmin, getRobotId } from './scheduler.ts';
+import { getRobotId, supabaseAdmin } from './scraperHelper.js';
+import { CRC_ROBOTS } from './scraperHelper.js';
 
-// TODO: scrape for huey too; pass tournament ID for future competitions
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
 
@@ -35,16 +35,6 @@ function fightTimeTo24h(timeStr: string): string {
   if (!isPm && h === 12) h = 0;
   return `${h.toString().padStart(2, '0')}:${m}`;
 }
-
-//TODO: repeated from scrapeBrettZone.ts -- clean up
-const CRC_ROBOTS = [
-    'Benny R. Johm',
-    'Capsize',
-    'Huey',
-/*     'Apollo',
-    'Jormangandr',
-    'Unkulunkulu' */
-  ]
 
 //TODO: add QUALIFYING INFO (like Q1-02)
 //workflow: scrape each fight, update DB once found

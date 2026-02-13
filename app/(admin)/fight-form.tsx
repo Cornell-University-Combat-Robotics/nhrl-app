@@ -66,7 +66,7 @@ export default function FightFormScreen() {
       outcome_type: outcomeType,
       competition: competition || undefined,
     };
-    //TOOD: im worried that our manually added fights may not sync up with scraper (create duplicate fights)
+    
     try {
       if (isEditing) {
         const isWinUpdate = fight?.is_win == null && fightData.is_win != null;
