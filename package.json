@@ -10,9 +10,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "scrape": "ts-node scripts/scraper/runScrapers.ts",
-    "scrape-brettzone": "ts-node scripts/scraper/runBrettZoneOnce.ts",
-    "scrape-truefinals": "ts-node scripts/scraper/runTrueFinalsOnce.ts"
+    "scrape": "tsx scripts/scraper/runScrapers.ts",
+    "scrape-brettzone": "tsx scripts/scraper/runBrettZoneOnce.ts",
+    "scrape-truefinals": "tsx scripts/scraper/runTrueFinalsOnce.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -51,6 +51,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.2"
   },
   "private": true
