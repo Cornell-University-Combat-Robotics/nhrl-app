@@ -1,13 +1,15 @@
 import { AuthProvider } from '@/src/contexts/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import type { AppStateStatus } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 30 * 1000, // 30 seconds
       gcTime: 10 * 60 * 1000,  // garbage collection
       retry: 1,
       refetchOnWindowFocus: true, //window refreshes
@@ -23,6 +25,19 @@ export const queryClient = new QueryClient({
 export default function RootLayout() {
   const notifListener = useRef<Notifications.EventSubscription>(null);
   const responseListener = useRef<Notifications.EventSubscription>(null);
+
+  // Wire React Native AppState to TanStack Query's focusManager
+  // so refetchOnWindowFocus works on mobile (no browser window.focus event)
+  useEffect(() => {
+    const onAppStateChange = (status: AppStateStatus) => {
+      if (Platform.OS !== 'web') {
+        focusManager.setFocused(status === 'active');
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', onAppStateChange);
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     //root layout ALWAYS mounted (acrossapp's lifetime) -> keep notif listeners here

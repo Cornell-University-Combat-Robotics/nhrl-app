@@ -1,16 +1,26 @@
 import { useFights } from '@/src/hooks/useFights';
+import { useRealtimeFights } from '@/src/hooks/useRealtimeFights';
 import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
-import { useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
 
 export default function FightsPage() {
-  const { data: fights, isLoading, error } = useFights();
+  const { data: fights, isLoading, error, refetch } = useFights();
+  useRealtimeFights();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Re-fetch fights when this tab comes into focus (e.g. after admin edits)
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // The query will refetch automatically, this is just for the pull-to-refresh animation
-    setTimeout(() => setRefreshing(false), 500);
+    await refetch();
+    setRefreshing(false);
   };
 
   if (isLoading) {
