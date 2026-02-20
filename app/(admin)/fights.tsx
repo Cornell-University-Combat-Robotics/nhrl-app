@@ -1,17 +1,27 @@
 import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
 import { useDeleteFight, useFights } from '@/src/hooks/useFights';
+import { useRealtimeFights } from '@/src/hooks/useRealtimeFights';
 import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet,Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function FightsScreen() {
-  const { data: fights, isLoading, error } = useFights();
+  const { data: fights, isLoading, error, refetch } = useFights();
+  useRealtimeFights();
   const { data: cron, isLoading: loadingCron } = useCron();
   const deleteFight = useDeleteFight();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const updateCron = useUpdateCron();
+
+  // Re-fetch fights when screen comes into focus (e.g. after editing/creating a fight)
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const handleDelete = (fightId: number, fightName: string) => {
     setDeleteTarget({ id: fightId, name: fightName });
