@@ -85,7 +85,7 @@ export default function FightsPage() {
               'yellow'
         }]}>
           {
-            item.is_win === null || item.is_win === undefined || item.is_win === 'N/A'
+            item.is_win == null
               ? 'Upcoming'
               : item.is_win === 'win'
                 ? '✓ Win'
@@ -123,7 +123,7 @@ export default function FightsPage() {
           </View>
         )}
 
-        {item.outcome_type && item.outcome_type !== 'N/A' && (
+        {item.outcome_type && (
           <View style={styles.row}>
             <Text style={styles.label}>Outcome:</Text>
             <Text style={styles.value}>{item.outcome_type}</Text>

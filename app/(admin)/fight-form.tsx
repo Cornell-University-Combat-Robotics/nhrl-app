@@ -21,9 +21,9 @@ export default function FightFormScreen() {
   const [opponentName, setOpponentName] = useState('');
   const [cage, setCage] = useState('');
   const [fightTime, setFightTime] = useState('');
-  const [isWin, setIsWin] = useState<'win' | 'lose' | 'N/A'>('N/A');
+  const [isWin, setIsWin] = useState<'win' | 'lose' | null>(null);
   const [fightDuration, setFightDuration] = useState('');
-  const [outcomeType, setOutcomeType] = useState<'KO' | 'Judges Decision' | 'Tapout' | 'N/A'>('N/A');
+  const [outcomeType, setOutcomeType] = useState<'TO' | 'KO' | 'JD' | null>(null);
   const [showRobotPicker, setShowRobotPicker] = useState(false);
   const [showOutcomePicker, setShowOutcomePicker] = useState(false);
   const [showIsWinPicker, setShowIsWinPicker] = useState(false);
@@ -41,10 +41,10 @@ export default function FightFormScreen() {
       } else if (winVal === 'lose') {
         setIsWin('lose');
       } else {
-        setIsWin('N/A');
+        setIsWin(null);
       }
       setFightDuration(fight.fight_duration?.toString() || '');
-      setOutcomeType(fight.outcome_type || 'KO');
+      setOutcomeType(fight.outcome_type ?? null);
       setCompetition(fight.competition || 'NHRL February 2026 12lb');
     }
   }, [fight]);
@@ -60,8 +60,8 @@ export default function FightFormScreen() {
       robot_name: robots?.find((r: any) => r.robot_id.toString() === robotId)?.robot_name || '',
       opponent_name: opponentName,
       cage: cage ? parseInt(cage) : undefined,
-      fight_time: fightTime || undefined,
-      is_win: isWin === 'N/A' ? null : isWin,
+      fight_time: fightTime || null,
+      is_win: isWin,
       fight_duration: fightDuration ? parseInt(fightDuration) : undefined,
       outcome_type: outcomeType,
       competition: competition || undefined,
@@ -154,7 +154,7 @@ export default function FightFormScreen() {
             style={styles.pickerButton}
             onPress={() => setShowIsWinPicker(true)}
           >
-            <Text style={styles.pickerButtonText}>{isWin}</Text>
+            <Text style={styles.pickerButtonText}>{isWin ?? 'N/A'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -163,7 +163,7 @@ export default function FightFormScreen() {
           style={styles.pickerButton}
           onPress={() => setShowOutcomePicker(true)}
         >
-          <Text style={styles.pickerButtonText}>{outcomeType}</Text>
+          <Text style={styles.pickerButtonText}>{outcomeType ?? 'N/A'}</Text>
         </TouchableOpacity>
 
         <Text style={styles.label}>Fight Duration (seconds)</Text>
@@ -223,7 +223,7 @@ export default function FightFormScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Outcome Type</Text>
-            {(['N/A', 'KO', 'Judges Decision', 'Tapout'] as const).map((outcome) => (
+            {([null, 'KO', 'TO', 'JD'] as const).map((outcome) => (
               <TouchableOpacity
                 key={outcome}
                 style={styles.modalOption}
@@ -232,7 +232,7 @@ export default function FightFormScreen() {
                   setShowOutcomePicker(false);
                 }}
               >
-                <Text style={styles.modalOptionText}>{outcome}</Text>
+                <Text style={styles.modalOptionText}>{outcome ?? 'N/A'}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -248,7 +248,7 @@ export default function FightFormScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Win Status</Text>
-            {(['N/A', 'win', 'lose'] as const).map((val) => (
+            {([null, 'win', 'lose'] as const).map((val) => (
               <TouchableOpacity
                 key={val}
                 style={styles.modalOption}
@@ -257,7 +257,7 @@ export default function FightFormScreen() {
                   setShowIsWinPicker(false);
                 }}
               >
-                <Text style={styles.modalOptionText}>{val}</Text>
+                <Text style={styles.modalOptionText}>{val ?? 'N/A'}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity

@@ -142,7 +142,7 @@ export default function FightsScreen() {
               </View>
             </View>
             <Text style={styles.detail}>
-              Result: {fight.is_win === 'win' ? '✅ Win' : (fight.is_win === 'lose' ? '❌ Loss' : 'N/A')} {fight.outcome_type !== 'N/A' ? `(${fight.outcome_type})` : ''}
+              Result: {fight.is_win === 'win' ? '✅ Win' : (fight.is_win === 'lose' ? '❌ Loss' : 'Upcoming')} {fight.outcome_type ? `(${fight.outcome_type})` : ''}
             </Text>
             {fight.cage && <Text style={styles.detail}>Cage: {fight.cage}</Text>}
             {fight.fight_time && (
