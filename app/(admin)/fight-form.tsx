@@ -66,7 +66,7 @@ export default function FightFormScreen() {
       outcome_type: outcomeType,
       competition: competition || undefined,
     };
-    
+
     try {
       if (isEditing) {
         const isWinUpdate = fight?.is_win == null && fightData.is_win != null;

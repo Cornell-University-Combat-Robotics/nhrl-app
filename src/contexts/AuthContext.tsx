@@ -23,7 +23,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('[Auth] getSession() called (initial load)');
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('[Auth] getSession() result:', session ? `session for ${session.user?.email}` : 'null', error ? `error: ${error.message}` : '');
       setSession(session);
       setUser(session?.user ?? null);
       checkAdminRole(session?.user);
@@ -33,7 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes: runs when user signs in/out, session restored on app reopen
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] onAuthStateChange:', event, session ? `session for ${session.user?.email}` : 'session null');
       setSession(session);
       setUser(session?.user ?? null);
       checkAdminRole(session?.user);
@@ -151,22 +154,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('[Auth] signIn called for', email);
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    console.log('[Auth] signIn result:', error ? `error: ${error.message}` : `session: ${data?.session ? 'ok' : 'null'}`);
     return { error };
   };
 
   const signUp = async (email: string, password: string) => {
+    console.log('[Auth] signUp called for', email);
     const { error } = await supabase.auth.signUp({
       email,
       password,
     });
+    console.log('[Auth] signUp result:', error ? `error: ${error.message}` : 'ok');
     return { error };
   };
 
   const signOut = async () => {
+    console.log('[Auth] signOut called');
     await supabase.auth.signOut();
   };
 

@@ -3,8 +3,7 @@ import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-import { getRobotId, supabaseAdmin } from './scraperHelper.js';
-import { CRC_ROBOTS } from './scraperHelper.js';
+import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
