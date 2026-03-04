@@ -10,7 +10,7 @@ export async function updateCron(cur_schedule: string){
     const { data, error } = await supabase
         .from('cron')
         .update({ cron_schedule: newSchedule })  // ← Pass object directly
-        .eq('job_name', 'scrapeBrettZone')
+        .eq('job_name', 'scrape')
 
     console.log('updateCron', data, error);
 
@@ -25,7 +25,7 @@ export async function getCron(client = supabase){
     const { data, error } = await client
         .from('cron')
         .select('cron_schedule')
-        .eq('job_name', 'scrapeBrettZone')
+        .eq('job_name', 'scrape')
 
 
     console.log('getCron', data, error);

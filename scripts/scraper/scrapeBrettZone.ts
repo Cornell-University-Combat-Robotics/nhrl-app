@@ -1,12 +1,10 @@
 import axios from 'axios';
 import 'dotenv/config';
-import path from 'path';
 import type { Fight } from '../../src/db/fights.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { formatTime } from '../../src/utils/formatTime.ts';
 import { log } from '../../src/utils/log.ts';
-import { getRobotId, supabaseAdmin } from './scraperHelper.js';
-import { CRC_ROBOTS } from './scraperHelper.js';
+import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
 
