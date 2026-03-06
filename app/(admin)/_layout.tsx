@@ -42,6 +42,7 @@ export default function AdminLayout() {
       <Stack.Screen name="builders" options={{ title: 'Builders' }} />
       <Stack.Screen name="fights" options={{ title: 'Fights' }} />
       <Stack.Screen name="subteams" options={{ title: 'Subteams' }} />
+      <Stack.Screen name="notification-form" options={{ title: 'Notifications' }} />
       <Stack.Screen name="robot-form" options={{ title: 'Add/Edit Robot' }} />
       <Stack.Screen name="builder-form" options={{ title: 'Add/Edit Builder' }} />
       <Stack.Screen name="fight-form" options={{ title: 'Add/Edit Fight' }} />
