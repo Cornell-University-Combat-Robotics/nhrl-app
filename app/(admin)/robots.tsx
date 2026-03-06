@@ -3,17 +3,24 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Admin robots list. Displays all robots with details
+ * (name, builder, weight class, weapon, drive, speeds).
+ * Supports add, edit (via robot-form), and delete (with confirmation modal).
+ */
 export default function RobotsScreen() {
   const { data: robots, isLoading, error } = useRobots();
   const deleteRobot = useDeleteRobot();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
+  /** Opens the delete confirmation modal for the given robot. */
   const handleDelete = (robotId: number, robotName: string) => {
     setDeleteTarget({ id: robotId, name: robotName });
     setDeleteModalVisible(true);
   };
 
+  /** Executes the delete mutation for the selected robot and closes the modal. */
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {

@@ -3,6 +3,11 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
+/**
+ * Login screen. Email/password form backed by Supabase Auth.
+ * On success, navigates to (tabs). Shows inline error messages on failure.
+ * Links to signup.
+ */
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,6 +16,10 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const passwordRef = useRef<TextInput | null>(null);
 
+  /**
+   * Validates inputs (non-empty), calls signIn via AuthContext,
+   * and navigates to (tabs) on success or sets error message on failure.
+   */
   const handleLogin = async () => {
     setErrorMessage(''); // Clear previous errors
     if (!email || !password) {

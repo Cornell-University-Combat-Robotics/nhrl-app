@@ -5,6 +5,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
 
+/**
+ * Fights list (user-facing). Displays all fights grouped by competition date
+ * (most recent first) with real-time updates via Supabase Realtime.
+ * Supports pull-to-refresh and refetches on tab focus.
+ */
 export default function FightsPage() {
   const { data: fights, isLoading, error, refetch } = useFights();
   useRealtimeFights();
@@ -17,6 +22,7 @@ export default function FightsPage() {
     }, [refetch])
   );
 
+  /** Pull-to-refresh handler; triggers manual refetch of fights data. */
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -75,6 +81,10 @@ export default function FightsPage() {
     }));
   }, [fights]);
 
+  /**
+   * Renders a single fight card: robot name, win/loss/upcoming badge,
+   * opponent, cage, time, duration, and outcome type.
+   */
   const renderFightCard = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -85,7 +95,7 @@ export default function FightsPage() {
               'yellow'
         }]}>
           {
-            item.is_win === null || item.is_win === undefined || item.is_win === 'N/A'
+            item.is_win == null
               ? 'Upcoming'
               : item.is_win === 'win'
                 ? '✓ Win'
@@ -123,7 +133,7 @@ export default function FightsPage() {
           </View>
         )}
 
-        {item.outcome_type && item.outcome_type !== 'N/A' && (
+        {item.outcome_type && (
           <View style={styles.row}>
             <Text style={styles.label}>Outcome:</Text>
             <Text style={styles.value}>{item.outcome_type}</Text>

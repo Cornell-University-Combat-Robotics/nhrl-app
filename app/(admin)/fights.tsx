@@ -7,6 +7,11 @@ import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Admin fights list. Displays all fights grouped by competition date
+ * (most recent first) with Realtime sync. Includes season cron toggle,
+ * add/edit/delete controls, and focus refetch.
+ */
 export default function FightsScreen() {
   const { data: fights, isLoading, error, refetch } = useFights();
   useRealtimeFights();
@@ -23,11 +28,13 @@ export default function FightsScreen() {
     }, [refetch])
   );
 
+  /** Opens the delete confirmation modal for the given fight. */
   const handleDelete = (fightId: number, fightName: string) => {
     setDeleteTarget({ id: fightId, name: fightName });
     setDeleteModalVisible(true);
   };
 
+  /** Executes the delete mutation for the selected fight and closes the modal. */
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -40,6 +47,10 @@ export default function FightsScreen() {
     }
   };
 
+  /**
+   * Toggles the scraper cron schedule between competition mode
+   * ('* * * * *') and off-season ('0 2 * * *').
+   */
   const handleCron = async () => {
     try {
       console.log('handleCron', cron);
@@ -142,7 +153,7 @@ export default function FightsScreen() {
               </View>
             </View>
             <Text style={styles.detail}>
-              Result: {fight.is_win === 'win' ? '✅ Win' : (fight.is_win === 'lose' ? '❌ Loss' : 'N/A')} {fight.outcome_type !== 'N/A' ? `(${fight.outcome_type})` : ''}
+              Result: {fight.is_win === 'win' ? '✅ Win' : (fight.is_win === 'lose' ? '❌ Loss' : 'Upcoming')} {fight.outcome_type ? `(${fight.outcome_type})` : ''}
             </Text>
             {fight.cage && <Text style={styles.detail}>Cage: {fight.cage}</Text>}
             {fight.fight_time && (

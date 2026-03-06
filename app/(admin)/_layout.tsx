@@ -2,6 +2,12 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+/**
+ * Admin layout. Stack navigator for dashboard and CRUD screens
+ * (robots, builders, fights, subteams).
+ * Guards: redirects to (auth)/login if not authenticated, to (tabs) if not admin.
+ * Shows spinner while loading.
+ */
 export default function AdminLayout() {
   const { loading, isAdmin, session } = useAuth();
 

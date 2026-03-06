@@ -3,6 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Add/edit subteam form. Creates a new subteam or edits an existing one
+ * (determined by ?id= query param). Single picker field for subteam name
+ * (sportsman, kinetic, marketing, autonomous).
+ */
 export default function SubteamFormScreen() {
   const params = useLocalSearchParams();
   const subteamId = params.id ? parseInt(params.id as string) : null;
@@ -21,6 +26,10 @@ export default function SubteamFormScreen() {
     }
   }, [subteam]);
 
+  /**
+   * Calls createSubteam or updateSubteam mutation with the selected
+   * subteam name. Shows success/error alert and navigates back.
+   */
   const handleSubmit = async () => {
     const subteamData = {
       subteam_name: subteamName,

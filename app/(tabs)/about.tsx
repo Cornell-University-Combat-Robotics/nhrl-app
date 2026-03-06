@@ -2,6 +2,10 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useRobots } from '@/src/hooks/useRobots';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+/**
+ * About page. Displays a personalized greeting (or login prompt) and lists
+ * up to 10 robots from the database with name, builder, weight class, weapon, and drive.
+ */
 export default function AboutScreen() {
   const { data: robots, isLoading, error } = useRobots();
   const { session, user } = useAuth();
@@ -27,7 +31,7 @@ export default function AboutScreen() {
           robots.slice(0, 10).map((robot: any) => (
             <View key={robot.robot_id} style={styles.robotCard}>
               <Text style={styles.robotName}>{robot.robot_name}</Text>
-              <Text style={styles.robotDetail}>Builder: {robot.builder_id}</Text>
+              <Text style={styles.robotDetail}>Builder: {robot.builders?.builder_name}</Text>
               <Text style={styles.robotDetail}>Weight: {robot.weight_class}</Text>
               <Text style={styles.robotDetail}>Weapon: {robot.weapon}</Text>
               <Text style={styles.robotDetail}>Drive: {robot.drive}</Text>

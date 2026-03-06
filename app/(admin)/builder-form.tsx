@@ -4,6 +4,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Add/edit builder form. Creates a new builder or edits an existing one
+ * (determined by ?id= query param).
+ * Fields: builder name (text), subteam (modal picker from useSubteams).
+ */
 export default function BuilderFormScreen() {
   const params = useLocalSearchParams();
   const builderId = params.id ? parseInt(params.id as string) : null;
@@ -25,6 +30,10 @@ export default function BuilderFormScreen() {
     }
   }, [builder]);
 
+  /**
+   * Validates required fields (name, subteam), then calls createBuilder
+   * or updateBuilder mutation. Shows success/error alert and navigates back.
+   */
   const handleSubmit = async () => {
     if (!builderName || !subteamId) {
       Alert.alert('Error', 'Please fill in all required fields');

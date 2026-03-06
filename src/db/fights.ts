@@ -1,6 +1,9 @@
 /** DB access for fights table; createFight triggers push notifications. */
-import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../notifications/sendPushNotif';
-import { supabase } from '../supabaseClient';
+import {
+  createFightNotifBroadcast,
+  updateFightNotifBroadcast,
+} from "../notifications/sendPushNotif";
+import { supabase } from "../supabaseClient";
 
 export interface Fight {
   fight_id?: number;
@@ -10,19 +13,19 @@ export interface Fight {
   cage?: number | null;
   fight_time?: string | null;
   last_updated?: string;
-  is_win?: string | null; // 'win' | 'lose' | null
+  is_win?: "win" | "lose" | null;
   fight_duration?: number;
-  outcome_type?: string;
+  outcome_type?: "TO" | "KO" | "JD" | null;
   competition?: string;
 }
 
 /** All fights with robot join; order by fight_time desc, fight_id desc. */
 export async function getAllFights() {
   const { data, error } = await supabase
-    .from('fights')
-    .select('*, robots!robot_id(robot_name, robot_id)')
-    .order('fight_time', { ascending: false, nullsFirst: true })
-    .order('fight_id', { ascending: false });
+    .from("fights")
+    .select("*, robots!robot_id(robot_name, robot_id)")
+    .order("fight_time", { ascending: false, nullsFirst: true })
+    .order("fight_id", { ascending: false });
 
   if (error) throw error;
   return data;
@@ -31,9 +34,9 @@ export async function getAllFights() {
 /** Single fight by id (with robot). */
 export async function getFightById(fightId: number) {
   const { data, error } = await supabase
-    .from('fights')
-    .select('*, robots!robot_id(robot_name, robot_id)')
-    .eq('fight_id', fightId)
+    .from("fights")
+    .select("*, robots!robot_id(robot_name, robot_id)")
+    .eq("fight_id", fightId)
     .single();
 
   if (error) throw error;
@@ -43,10 +46,10 @@ export async function getFightById(fightId: number) {
 /** Fights for one robot; order by fight_id desc. */
 export async function getFightsByRobotId(robotId: number) {
   const { data, error } = await supabase
-    .from('fights')
-    .select('*')
-    .eq('robot_id', robotId)
-    .order('fight_id', { ascending: false });
+    .from("fights")
+    .select("*")
+    .eq("robot_id", robotId)
+    .order("fight_id", { ascending: false });
 
   if (error) throw error;
   return data;
@@ -55,36 +58,38 @@ export async function getFightsByRobotId(robotId: number) {
 /** Insert or update by (robot_name, opponent_name, competition); sends create/update push notif. Resolves robot_name from robot_id if needed. */
 export async function createFight(fight: Fight) {
   // Get current time in HH:MM:SS format
-  const now = new Date().toTimeString().split(' ')[0];
-  
+  const now = new Date().toTimeString().split(" ")[0];
+
   // Fetch robot name from robots table if not provided
   let robotName = fight.robot_name;
   if (!robotName) {
     const { data: robotData, error: robotError } = await supabase
-      .from('robots')
-      .select('robot_name')
-      .eq('robot_id', fight.robot_id)
+      .from("robots")
+      .select("robot_name")
+      .eq("robot_id", fight.robot_id)
       .single();
-    
+
     if (robotError) throw robotError;
-    robotName = robotData?.robot_name || '';
+    robotName = robotData?.robot_name || "";
   }
-  
+
   const fightData = {
     ...fight,
-    fight_time: fight.fight_time === '' ? null : fight.fight_time,
+    fight_time: fight.fight_time === "" ? null : (fight.fight_time ?? null),
+    is_win: fight.is_win ?? null,
+    outcome_type: fight.outcome_type ?? null,
     robot_name: robotName,
     last_updated: now,
   };
-  
+
   //essentially the same as upsert, but expanded out to allow for different notification types
   //check if fight already exists
   const { data, error } = await supabase
-    .from('fights')
-    .select('fight_id, is_win')
-    .eq('robot_name', robotName)
-    .eq('opponent_name', fight.opponent_name)
-    .eq('competition', fight.competition)
+    .from("fights")
+    .select("fight_id, is_win")
+    .eq("robot_name", robotName)
+    .eq("opponent_name", fight.opponent_name)
+    .eq("competition", fight.competition)
     .maybeSingle(); //maybeSingle because we don't know if the fight exists yet
 
   if (error) throw error;
@@ -92,37 +97,80 @@ export async function createFight(fight: Fight) {
     //fight already exists
     //just update fight ≠≠ create new one
     const { error: updateError } = await supabase
-      .from('fights')
+      .from("fights")
       .update(fightData)
-      .eq('fight_id', data.fight_id);
+      .eq("fight_id", data.fight_id);
     if (updateError) throw updateError;
 
-    if(data.is_win == null && fightData.is_win != null) {
-      await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: true });
+    if (data.is_win == null && fightData.is_win != null) {
+      await updateFightNotifBroadcast(fightData, supabase, {
+        isWinUpdate: true,
+      });
     } else {
-      await updateFightNotifBroadcast(fightData, supabase, { isWinUpdate: false });
+      await updateFightNotifBroadcast(fightData, supabase, {
+        isWinUpdate: false,
+      });
     }
     return data;
   } else {
     //fight doesn't exist yet, so create new one
     const { error: insertError } = await supabase
-      .from('fights')
+      .from("fights")
       .insert(fightData);
     if (insertError) throw insertError;
     await createFightNotifBroadcast(fightData, supabase);
     return data;
   }
-
-  return data;
 }
 
+/** Update an existing fight by fight_id. */
+export async function updateFight(fightId: number, fight: Partial<Fight>) {
+  // Get current time in HH:MM:SS format
+  const now = new Date().toTimeString().split(" ")[0];
+  
+  const fightData = {
+    ...fight,
+    fight_time: fight.fight_time === "" ? null : fight.fight_time,
+    last_updated: now,
+  };
+
+  // Remove undefined values
+  const cleanData = Object.fromEntries(
+    Object.entries(fightData).filter(([_, v]) => v !== undefined)
+  );
+  
+  // Perform the update
+  const { error } = await supabase
+    .from("fights")
+    .update(cleanData)
+    .eq("fight_id", fightId);
+
+  if (error) {
+    console.error("Update error:", error);
+    throw error;
+  }
+  
+  // Fetch the updated record
+  const { data, error: fetchError } = await supabase
+    .from("fights")
+    .select("*")
+    .eq("fight_id", fightId)
+    .single();
+
+  if (fetchError) {
+    console.error("Fetch error:", fetchError);
+    throw fetchError;
+  }
+  
+  return data;
+}
 
 /** Delete fight by id. */
 export async function deleteFight(fightId: number) {
   const { error } = await supabase
-    .from('fights')
+    .from("fights")
     .delete()
-    .eq('fight_id', fightId);
+    .eq("fight_id", fightId);
 
   if (error) throw error;
 }
