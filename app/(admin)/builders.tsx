@@ -3,17 +3,23 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Admin builders list. Displays all builders with their associated subteam.
+ * Supports add, edit (via builder-form), and delete (with confirmation modal).
+ */
 export default function BuildersScreen() {
   const { data: builders, isLoading, error } = useBuilders();
   const deleteBuilder = useDeleteBuilder();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
+  /** Opens the delete confirmation modal for the given builder. */
   const handleDelete = (builderId: number, builderName: string) => {
     setDeleteTarget({ id: builderId, name: builderName });
     setDeleteModalVisible(true);
   };
 
+  /** Executes the delete mutation for the selected builder and closes the modal. */
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {

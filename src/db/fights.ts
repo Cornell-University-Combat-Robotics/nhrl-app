@@ -123,6 +123,48 @@ export async function createFight(fight: Fight) {
   }
 }
 
+/** Update an existing fight by fight_id. */
+export async function updateFight(fightId: number, fight: Partial<Fight>) {
+  // Get current time in HH:MM:SS format
+  const now = new Date().toTimeString().split(" ")[0];
+  
+  const fightData = {
+    ...fight,
+    fight_time: fight.fight_time === "" ? null : fight.fight_time,
+    last_updated: now,
+  };
+
+  // Remove undefined values
+  const cleanData = Object.fromEntries(
+    Object.entries(fightData).filter(([_, v]) => v !== undefined)
+  );
+  
+  // Perform the update
+  const { error } = await supabase
+    .from("fights")
+    .update(cleanData)
+    .eq("fight_id", fightId);
+
+  if (error) {
+    console.error("Update error:", error);
+    throw error;
+  }
+  
+  // Fetch the updated record
+  const { data, error: fetchError } = await supabase
+    .from("fights")
+    .select("*")
+    .eq("fight_id", fightId)
+    .single();
+
+  if (fetchError) {
+    console.error("Fetch error:", fetchError);
+    throw fetchError;
+  }
+  
+  return data;
+}
+
 /** Delete fight by id. */
 export async function deleteFight(fightId: number) {
   const { error } = await supabase

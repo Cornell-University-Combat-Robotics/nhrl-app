@@ -4,6 +4,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Add/edit robot form. Creates a new robot or edits an existing one
+ * (determined by ?id= query param). Fields: name, weight class, weapon,
+ * drive, top speed, weapon speed, builder (picker).
+ */
 export default function RobotFormScreen() {
   const params = useLocalSearchParams();
   const robotId = params.id ? parseInt(params.id as string) : null;
@@ -38,6 +43,10 @@ export default function RobotFormScreen() {
     }
   }, [robot]);
 
+  /**
+   * Validates required fields, then calls createRobot or updateRobot
+   * mutation depending on edit mode. Shows success/error alert and navigates back.
+   */
   const handleSubmit = async () => {
     if (!robotName || !builderId) {
       Alert.alert('Error', 'Please fill in all required fields');

@@ -2,9 +2,14 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { router } from 'expo-router';
 import { Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Admin dashboard landing page. Shows navigation cards for Robots, Builders,
+ * Fights, and Subteams management. Includes sign-out and back-to-app actions.
+ */
 export default function AdminDashboard() {
   const { signOut, user } = useAuth();
 
+  /** Signs out via AuthContext and redirects to the login screen. */
   const handleSignOut = async () => {
     await signOut();
     router.replace('/(auth)/login');

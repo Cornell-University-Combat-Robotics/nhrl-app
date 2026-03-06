@@ -3,7 +3,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Tabs } from 'expo-router';
 import { Text, TouchableOpacity } from 'react-native';
 
-/** Controls layout of all files in this level of the project (aka. root as (tabs)) */
+/**
+ * Tab navigator layout for the main app.
+ * Three tabs: Home, About, Fights. Dark theme with yellow active tint.
+ * Header shows Login (unauthenticated) or Admin (admin users) button.
+ */
 export default function TabLayout() {
   const { session, isAdmin } = useAuth();
 
@@ -19,6 +23,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#25292e',
         },
+        /**
+         * Conditionally renders header-right button:
+         * Login if no session, Admin if user is admin, otherwise nothing.
+         */
         headerRight: () => {
           if (!session) {
             return (

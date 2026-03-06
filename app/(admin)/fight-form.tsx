@@ -7,6 +7,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Add/edit fight form. Creates a new fight or edits an existing one
+ * (determined by ?id= query param). Fields: robot (picker), opponent, cage,
+ * time, competition, win/lose, outcome type, duration.
+ * On update, sends push notifications via updateFightNotifBroadcast.
+ */
 export default function FightFormScreen() {
   const params = useLocalSearchParams();
   const fightId = params.id ? parseInt(params.id as string) : null;
@@ -49,6 +55,12 @@ export default function FightFormScreen() {
     }
   }, [fight]);
 
+  /**
+   * Validates required fields (robot, opponent), builds fight payload,
+   * then calls createFight or updateFight mutation. On update, broadcasts
+   * push notifications ("Fight Result" if outcome just set, otherwise
+   * "Updated Fight"). Shows success/error alert and navigates back.
+   */
   const handleSubmit = async () => {
     if (!robotId || !opponentName) {
       Alert.alert('Error', 'Please fill in all required fields');

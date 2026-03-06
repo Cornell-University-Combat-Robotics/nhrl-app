@@ -3,17 +3,23 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Admin subteams list. Displays all subteams.
+ * Supports add, edit (via subteam-form), and delete (with confirmation modal).
+ */
 export default function SubteamsScreen() {
   const { data: subteams, isLoading, error } = useSubteams();
   const deleteSubteam = useDeleteSubteam();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
+  /** Opens the delete confirmation modal for the given subteam. */
   const handleDelete = (subteamId: number, subteamName: string) => {
     setDeleteTarget({ id: subteamId, name: subteamName });
     setDeleteModalVisible(true);
   };
 
+  /** Executes the delete mutation for the selected subteam and closes the modal. */
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {

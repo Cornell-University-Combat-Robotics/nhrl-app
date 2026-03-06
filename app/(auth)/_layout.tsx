@@ -1,6 +1,10 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Redirect, Stack } from 'expo-router';
 
+/**
+ * Auth layout (login/signup). Stack navigator with dark header.
+ * Redirects to (tabs) if user already has an active session.
+ */
 export default function AuthLayout() {
   const { loading, session } = useAuth();
 

@@ -3,6 +3,11 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
+/**
+ * Signup screen. Email, password, confirm-password form.
+ * Creates account via Supabase Auth, then prompts for email verification
+ * and redirects to login.
+ */
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,6 +17,11 @@ export default function SignupScreen() {
   const passwordRef = useRef<TextInput | null>(null);
   const confirmRef = useRef<TextInput | null>(null);
 
+  /**
+   * Validates all fields (non-empty, passwords match, min 6 chars),
+   * calls signUp, shows success alert with email verification prompt,
+   * then navigates to login.
+   */
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');

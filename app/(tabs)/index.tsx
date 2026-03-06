@@ -5,7 +5,10 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-/** Home page */ 
+/**
+ * Home page. Shows welcome banner, auth status (email, admin badge),
+ * database stats (robot/fight counts), and navigation links to About and Admin.
+ */
 export default function Index() {
   const { session, isAdmin, user, refreshAdminStatus } = useAuth();
   const { data: robots, isLoading: robotsLoading } = useRobots();
@@ -13,6 +16,10 @@ export default function Index() {
   const [refreshing, setRefreshing] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
+  /**
+   * Debug helper: queries profiles table directly, logs result,
+   * then refreshes admin status from AuthContext.
+   */
   const handleRefresh = async () => {
     setRefreshing(true);
     setDebugInfo('Checking admin status...');
