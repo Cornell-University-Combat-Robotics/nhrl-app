@@ -1,3 +1,4 @@
+/** DB access for robots table (with builder join). */
 import { supabase } from '../supabaseClient.ts';
 
 export interface Robot {
@@ -11,6 +12,7 @@ export interface Robot {
   weapon_speed?: number;
 }
 
+/** All robots, joined with builders; order by robot_id desc. */
 export async function getAllRobots() {
   const { data, error } = await supabase
     .from('robots')
@@ -21,6 +23,7 @@ export async function getAllRobots() {
   return data;
 }
 
+/** Single robot by id (with builder). Throws on error or not found. */
 export async function getRobotById(robotId: number) {
   const { data, error } = await supabase
     .from('robots')
@@ -32,6 +35,7 @@ export async function getRobotById(robotId: number) {
   return data;
 }
 
+/** Insert robot; returns created row. */
 export async function createRobot(robot: Robot) {
   const { data, error } = await supabase
     .from('robots')
@@ -43,6 +47,7 @@ export async function createRobot(robot: Robot) {
   return data;
 }
 
+/** Update robot by id; returns updated row. */
 export async function updateRobot(robotId: number, robot: Partial<Robot>) {
   const { data, error } = await supabase
     .from('robots')
@@ -55,6 +60,7 @@ export async function updateRobot(robotId: number, robot: Partial<Robot>) {
   return data;
 }
 
+/** Delete robot by id. */
 export async function deleteRobot(robotId: number) {
   const { error } = await supabase
     .from('robots')

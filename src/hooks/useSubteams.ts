@@ -1,6 +1,8 @@
+/** React Query hooks for subteams. */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as subteamsDb from '../db/subteams';
 
+/** All subteams. */
 export function useSubteams() {
   return useQuery({
     queryKey: ['subteams'],
@@ -8,6 +10,7 @@ export function useSubteams() {
   });
 }
 
+/** Single subteam by id; disabled when subteamId falsy. */
 export function useSubteam(subteamId: number) {
   return useQuery({
     queryKey: ['subteams', subteamId],
@@ -16,6 +19,7 @@ export function useSubteam(subteamId: number) {
   });
 }
 
+/** Create subteam; invalidates ['subteams']. */
 export function useCreateSubteam() {
   const queryClient = useQueryClient();
 
@@ -27,6 +31,7 @@ export function useCreateSubteam() {
   });
 }
 
+/** Update subteam (args: { subteamId, subteam }); invalidates ['subteams']. */
 export function useUpdateSubteam() {
   const queryClient = useQueryClient();
 
@@ -39,6 +44,7 @@ export function useUpdateSubteam() {
   });
 }
 
+/** Delete subteam by id; invalidates ['subteams']. */
 export function useDeleteSubteam() {
   const queryClient = useQueryClient();
 

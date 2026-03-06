@@ -1,3 +1,7 @@
+/**
+ * BrettZone scraper: fetches fight data from the BrettZone API per CRC robot, parses responses,
+ * and upserts into the fights table with push notification broadcasts on insert/update.
+ */
 import axios from 'axios';
 import 'dotenv/config';
 import type { Fight } from '../../src/db/fights.ts';
@@ -6,24 +10,25 @@ import { formatTime } from '../../src/utils/formatTime.ts';
 import { log } from '../../src/utils/log.ts';
 import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
 
+/** BrettZone API base URL; query with ?bot=<robotName>. Override via SCRAPER_TARGET_URL. */
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
 
 /**
- * Parse fight data from API JSON response. A clean-up fxn.
- * @param matches - Array of match objects from the API
- * @param ourRobotName - The name of the robot we're querying for (to determine opponent and win/loss)
- * 
- * API fields:
- * - "tournamentName": "NHRL February 2026 12lb"
- * - "cage": "Cage 4"
- * - "player1": "Carmen", "player1clean": "carmen"
- * - "player2": "Benny R. Johm", "player2clean": "bennyrjohm"
- * - "player1wins": "1", "player2wins": "0"
- * - "winAnnotation": "JD" (Judges Decision), "TO" (Tapout), "KO" (Knockout)
- * - "matchLength": "180" (in seconds)
- * - "startTime": "1746299570" (epoch seconds)
- * 
- * Note: our robot could be either player1 or player2
+ * Parse fight data from the BrettZone API JSON response into app Fight objects.
+ * Filters out invalid matches (missing player1/player2) and normalizes win/loss from player1/player2 perspective.
+ *
+ * @param matches - Raw array of match objects from the API (e.g. response.data.fights). Each may have player1, player2, cage, startTime, matchLength, winAnnotation, tournamentName, player1wins, player2wins.
+ * @param ourRobotName - The robot we're querying for; used to set robot_name, opponent_name, and is_win (our robot can be player1 or player2).
+ * @returns Array of Fight-like objects with competition, robot_name, opponent_name, cage, fight_time (formatted), is_win ('win'|'lose'), fight_duration, outcome_type. Invalid matches are omitted.
+ *
+ * API fields used:
+ * - tournamentName, cage ("Cage N"), player1, player2, player1wins ("1"/"0"), player2wins, winAnnotation (e.g. "JD", "TO", "KO"), matchLength (seconds), startTime (epoch seconds).
+ *
+ * Preconditions:
+ * - ourRobotName must match exactly one of player1 or player2 in each valid match.
+ * Invariants:
+ * - Entries without player1 or player2 are skipped and logged as warnings.
+ * - fight_time is produced by formatTime(parseInt(startTime)); cage is parsed from "Cage N".
  */
 function parseFightsFromApi(matches: any[], ourRobotName: string) {
 
@@ -62,7 +67,19 @@ function parseFightsFromApi(matches: any[], ourRobotName: string) {
 }
 
 /**
- * @param f - fight object
+ * Insert or update a single fight in the fights table and send notifications when appropriate.
+ * Resolves robot_name to robot_id, then upserts on (robot_name, opponent_name, competition).
+ * Sends "New Fight" on insert; sends "Updated Fight" on update when is_win or other fields change (isWinUpdate when is_win changed).
+ *
+ * @param f - Fight-like object with robot_name, opponent_name, competition, cage, fight_time, is_win, fight_duration, outcome_type. Must have robot_name that exists in robots table.
+ * @returns Promise that resolves when the upsert (and optional notification) completes. Rejects are caught and logged; the function does not rethrow.
+ *
+ * Preconditions:
+ * - f.robot_name must exist in robots table (getRobotId returns non-null).
+ * - Supabase fights table has unique constraint on (robot_name, opponent_name, competition).
+ * Invariants:
+ * - If the fight was already complete (is_win non-null in DB), no update notification is sent when only non-win fields change.
+ * - last_updated is set to current time (formatTime of now).
  */
 async function upsertFight(f: any) {
   try {
@@ -117,6 +134,19 @@ async function upsertFight(f: any) {
   }
 }
 
+/**
+ * Run the full BrettZone scrape: for each CRC robot, fetch fights from the BrettZone API,
+ * parse them, and upsert each fight (with notifications). Logs progress and errors per robot and per fight.
+ *
+ * @returns Promise that resolves when all robots have been processed (individual fetch or upsert failures are logged but do not stop the loop).
+ *
+ * Preconditions:
+ * - SCRAPER_TARGET_URL or default BrettZone URL is reachable; EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY set.
+ * - CRC_ROBOTS names exist in robots table for fights to be stored.
+ * Invariants:
+ * - Robots are processed sequentially; within a robot, fights are upserted sequentially.
+ * - Does not throw; errors are logged and the next robot/fight is processed.
+ */
 export async function runScrape() {
   log('info', `Scrape started for ${CRC_ROBOTS.length} robots`)
 

@@ -1,6 +1,7 @@
+/** DB access for cron table (scraper schedule). */
 import { supabase } from '../supabaseClient.ts'
-//TODO: change RLS policy to be more secure
 
+/** Toggle schedule: '* * * * *' → '0 2 * * *', else → '* * * * *'. Updates row where job_name = 'scrape'. */
 export async function updateCron(cur_schedule: string){
     // Determine the new schedule value
     const newSchedule = cur_schedule === '* * * * *' 
@@ -18,9 +19,7 @@ export async function updateCron(cur_schedule: string){
     return data;
 }
 
-/**
- * @param client : optional param -- you can pass in supabaseAdmin if you want to use the server-side client
- */
+/** Cron schedule for job_name = 'scrape'. Pass supabaseAdmin for server-side. Returns Array<{cron_schedule}>. */
 export async function getCron(client = supabase){
     const { data, error } = await client
         .from('cron')

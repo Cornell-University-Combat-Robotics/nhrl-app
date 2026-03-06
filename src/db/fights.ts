@@ -1,3 +1,4 @@
+/** DB access for fights table; createFight triggers push notifications. */
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../notifications/sendPushNotif';
 import { supabase } from '../supabaseClient';
 
@@ -9,12 +10,13 @@ export interface Fight {
   cage?: number | null;
   fight_time?: string | null;
   last_updated?: string;
-  is_win?: string | null; // '1' or '0' or null
+  is_win?: string | null; // 'win' | 'lose' | null
   fight_duration?: number;
   outcome_type?: string;
   competition?: string;
 }
 
+/** All fights with robot join; order by fight_time desc, fight_id desc. */
 export async function getAllFights() {
   const { data, error } = await supabase
     .from('fights')
@@ -26,6 +28,7 @@ export async function getAllFights() {
   return data;
 }
 
+/** Single fight by id (with robot). */
 export async function getFightById(fightId: number) {
   const { data, error } = await supabase
     .from('fights')
@@ -37,6 +40,7 @@ export async function getFightById(fightId: number) {
   return data;
 }
 
+/** Fights for one robot; order by fight_id desc. */
 export async function getFightsByRobotId(robotId: number) {
   const { data, error } = await supabase
     .from('fights')
@@ -48,6 +52,7 @@ export async function getFightsByRobotId(robotId: number) {
   return data;
 }
 
+/** Insert or update by (robot_name, opponent_name, competition); sends create/update push notif. Resolves robot_name from robot_id if needed. */
 export async function createFight(fight: Fight) {
   // Get current time in HH:MM:SS format
   const now = new Date().toTimeString().split(' ')[0];
@@ -112,6 +117,7 @@ export async function createFight(fight: Fight) {
 }
 
 
+/** Delete fight by id. */
 export async function deleteFight(fightId: number) {
   const { error } = await supabase
     .from('fights')

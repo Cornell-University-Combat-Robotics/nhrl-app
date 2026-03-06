@@ -1,3 +1,4 @@
+/** Request push permission and return Expo push token; used to store in profiles. */
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -13,6 +14,7 @@ Notifications.setNotificationHandler({
     }),
 });
 
+/** Returns Expo push token or undefined if not device / permission denied. Requires EXPO_PUBLIC_EXPO_PROJECT_ID. */
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
     if(!Device.isDevice){
         console.warn('Must use physical device for Push Notifications');

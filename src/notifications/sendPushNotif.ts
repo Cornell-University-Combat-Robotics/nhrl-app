@@ -4,9 +4,7 @@ import type { Fight } from '../db/fights.ts';
 /** Type-only so this file works in both Node (scraper) and Expo; Node ESM doesn't expose named exports from CJS. */
 type SupabaseClientType = import('@supabase/supabase-js').SupabaseClient;
 
-/**
- * Purpose: Sends push notification to a single device
- */
+/** Sends one push to Expo; token = target device. Returns Expo API JSON; logs on !response.ok. */
 export async function sendPushNotification(expoPushToken: string, title: string, body: string) {
     const message = {
         to: expoPushToken, //target device, not shown to user
@@ -30,6 +28,7 @@ export async function sendPushNotification(expoPushToken: string, title: string,
     return result
 }
 
+/** Broadcast "New Fight" to all profiles with expo_push_token (fight time, cage, opponents). */
 export async function createFightNotifBroadcast(
     createdFight: Fight,
     supabaseClient: SupabaseClientType
@@ -38,6 +37,7 @@ export async function createFightNotifBroadcast(
     await editFightNotifBroadcast('New Fight', msg, supabaseClient);
   }
 
+/** Broadcast "Fight Result" (if isWinUpdate) or "Updated Fight"; uses same client to fetch profiles. */
 export async function updateFightNotifBroadcast(
     updatedFight: Fight,
     supabaseClient: SupabaseClientType,
@@ -58,10 +58,8 @@ export async function updateFightNotifBroadcast(
   }
 
 type ProfilePushRow = { id: string; expo_push_token: string | null };
-//TODO: need for delete fight?
-/**
- * Purpose: Sends push notif to ALL users when any fight edit is made (e.g. insert, update, delete)
- */
+
+/** Fetches all profiles with expo_push_token, sends one push per profile (title + msg). Used by create/update broadcast. */
   export async function editFightNotifBroadcast(
     title: string,
     msg: string,

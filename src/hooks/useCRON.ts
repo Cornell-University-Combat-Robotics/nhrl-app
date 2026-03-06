@@ -1,11 +1,8 @@
+/** React Query hooks for cron (scraper schedule). Competition: '* * * * *'; off-season: '0 2 * * *'. */
 import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as cronDB from '../db/cron';
 
-//note: cron is the cron_schedule: controls how often the scrape runs
-/*
-during competition season: '* * * * *'
-off-season: '0 2 * * *' (default: every day at 02:00)
-*/
+/** Mutation to toggle cron schedule; invalidates ['cron'] on success. */
 export function useUpdateCron(){
     const queryClient = useQueryClient();
 
@@ -21,8 +18,9 @@ export function useUpdateCron(){
     })
 }
 
+/** Query for current cron schedule (getCron). */
 export function useCron(){
-    return useQuery({
+  return useQuery({
         queryKey: ['cron'],
         queryFn: () => cronDB.getCron()
     })

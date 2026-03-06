@@ -1,3 +1,7 @@
+/**
+ * Shared scraper infrastructure: Supabase admin client, robot lookup, dynamic cron scheduler,
+ * realtime subscription to cron table, and CRC robot list. Used by runScrapers and both scrapers.
+ */
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 import cron from 'node-cron';
@@ -7,7 +11,10 @@ import { log } from '../../src/utils/log.js';
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-/** Shared Supabase admin client for scrapers and scheduler (realtime, cron). */
+/**
+ * Shared Supabase admin client for scrapers and scheduler (realtime, cron).
+ * Uses service role key; has full DB access. Realtime is configured for cron table subscription.
+ */
 export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   realtime: {
     params: {
@@ -19,8 +26,16 @@ export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
 let activeTask: cron.ScheduledTask | null = null;
 
 /**
- * Look up robot_id from robots table by robot_name. Returns null if not found or on error.
- * Shared by BrettZone and TrueFinals scrapers.
+ * Look up robot_id from the robots table by robot_name.
+ *
+ * @param robotName - Exact robot name as stored in `robots.robot_name`.
+ * @returns The numeric `robot_id` if found, or `null` if not found or on DB error.
+ *
+ * Preconditions:
+ * - `EXPO_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be set.
+ * Invariants:
+ * - At most one row is returned (limit 1).
+ * - Does not throw; errors are swallowed and result in `null`.
  */
 export async function getRobotId(robotName: string): Promise<number | null> {
   const { data, error } = await supabaseAdmin
@@ -33,10 +48,25 @@ export async function getRobotId(robotName: string): Promise<number | null> {
   return null;
 }
 
+/**
+ * A scraper is an async function that runs one scrape pass (e.g. BrettZone or TrueFinals).
+ * Used by the scheduler to run all scrapers in sequence on each cron tick.
+ */
 export type ScraperFn = () => Promise<void>;
 
 /**
- * Load cron schedule from DB and schedule a single job that runs all scrapers in sequence.
+ * Load cron schedule from the `cron` table and schedule a single cron job that runs all
+ * scrapers in sequence on each tick. Stops any previously active task before rescheduling.
+ *
+ * @param scrapers - Array of scraper functions to run in order on each cron tick.
+ * @returns Promise that resolves when scheduling is done (or rejects on missing cron data).
+ *
+ * Preconditions:
+ * - `cron` table has at least one row with a valid `cron_schedule` (e.g. "0 * * * *").
+ * - Each element of `scrapers` is a no-arg async function that may throw.
+ * Invariants:
+ * - Only one active cron task is ever running; calling this again stops the previous one.
+ * - Scraper failures are logged but do not stop other scrapers from running.
  */
 export async function loadAndScheduleJobs(scrapers: ScraperFn[]) {
   log('info', 'Loading and scheduling jobs...');
@@ -71,7 +101,16 @@ export async function loadAndScheduleJobs(scrapers: ScraperFn[]) {
 }
 
 /**
- * Subscribe to cron table changes and reload schedule when it changes.
+ * Subscribe to Postgres changes on the `cron` table; when the table changes, reloads the
+ * cron schedule by calling loadAndScheduleJobs with the same scrapers.
+ *
+ * @param scrapers - Same scraper array passed to loadAndScheduleJobs when reloading.
+ * @returns The Supabase Realtime channel (for unsubscribe on shutdown).
+ *
+ * Preconditions:
+ * - supabaseAdmin is connected and realtime is enabled.
+ * Invariants:
+ * - Listens for all events ('*') on public.cron; any change triggers a full reschedule.
  */
 export function setupRealtimeSubscription(scrapers: ScraperFn[]) {
   log('info', 'Setting up realtime subscription');
@@ -102,7 +141,16 @@ export function setupRealtimeSubscription(scrapers: ScraperFn[]) {
 }
 
 /**
- * Start the scheduler: load cron, subscribe to realtime, handle SIGINT.
+ * Start the dynamic cron scheduler: load schedule from DB, subscribe to cron table
+ * changes, and register SIGINT handler to stop the task and unsubscribe before exit.
+ *
+ * @param scrapers - Array of scraper functions to run on schedule and on config reload.
+ * @returns Promise that resolves once the server is running (does not resolve on SIGINT).
+ *
+ * Preconditions:
+ * - loadAndScheduleJobs(scrapers) can succeed (cron row exists).
+ * Invariants:
+ * - Process stays alive until SIGINT; then activeTask is stopped, channel unsubscribed, exit(0).
  */
 export async function start(scrapers: ScraperFn[]) {
   log('info', 'Starting realtime dynamic cron server...');
@@ -128,8 +176,17 @@ export async function start(scrapers: ScraperFn[]) {
 }
 
 /**
- * Run once: execute all scrapers in sequence then exit.
- * Otherwise start the scheduler (cron + realtime).
+ * Either run all scrapers once and exit, or start the long-running scheduler.
+ *
+ * @param scrapers - Array of scraper functions to run (in order).
+ * @param runOnce - If true, run each scraper once in sequence then process.exit(0). If false, start the scheduler and listen for cron + realtime.
+ * @returns Promise that resolves when runOnce is true after scrapes complete, or when start() completes (scheduler running). Calls process.exit(0) when runOnce.
+ *
+ * Preconditions:
+ * - For runOnce: scrapers run in order; one failure does not prevent the rest (caller may wrap in try/catch).
+ * - For !runOnce: same as start(scrapers).
+ * Invariants:
+ * - When runOnce is true, process exits with 0 after all scrapers run; no scheduler is started.
  */
 export async function runWithScheduler(
   scrapers: ScraperFn[],
@@ -146,6 +203,9 @@ export async function runWithScheduler(
   }
 }
 
+/**
+ * List of CRC robot names scraped by BrettZone and TrueFinals. Each must exist in `robots.robot_name`.
+ */
 export const CRC_ROBOTS = [
   'Benny R. Johm',
   'Capsize',

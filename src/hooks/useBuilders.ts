@@ -1,6 +1,8 @@
+/** React Query hooks for builders. */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as buildersDb from '../db/builders';
 
+/** All builders. */
 export function useBuilders() {
   return useQuery({
     queryKey: ['builders'],
@@ -8,15 +10,16 @@ export function useBuilders() {
   });
 }
 
+/** Single builder by id; disabled when builderId falsy. */
 export function useBuilder(builderId: number) {
   return useQuery({
     queryKey: ['builders', builderId],
     queryFn: () => buildersDb.getBuilderById(builderId),
-    //0, null, or undefined → query doesn't run (avoids an invalid fetch)
     enabled: !!builderId,
   });
 }
 
+/** Create builder; invalidates ['builders']. */
 export function useCreateBuilder() {
   const queryClient = useQueryClient();
 
@@ -28,6 +31,7 @@ export function useCreateBuilder() {
   });
 }
 
+/** Update builder (args: { builderId, builder }); invalidates ['builders']. */
 export function useUpdateBuilder() {
   const queryClient = useQueryClient();
 
@@ -40,6 +44,7 @@ export function useUpdateBuilder() {
   });
 }
 
+/** Delete builder by id; invalidates ['builders']. */
 export function useDeleteBuilder() {
   const queryClient = useQueryClient();
 

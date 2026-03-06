@@ -1,3 +1,7 @@
+/**
+ * TrueFinals scraper: fetches 12lb and 3lb exhibition pages via Puppeteer, parses with Cheerio,
+ * and insert/updates fights for CRC robots with push notification broadcasts.
+ */
 import * as cheerio from "cheerio";
 import 'dotenv/config';
 import puppeteer from 'puppeteer';
@@ -5,10 +9,23 @@ import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/
 import { log } from '../../src/utils/log.ts';
 import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
 
+/** TrueFinals 12lb exhibition page URL. */
 const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
+/** TrueFinals 3lb exhibition page URL. */
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
 
-/** Fetch full HTML after JS has run (Option A: headless browser, then Cheerio). */
+/**
+ * Fetch the full HTML of a URL after JavaScript has run, using a headless browser.
+ * Waits for DOM and for exhibition game buttons to appear before returning content.
+ *
+ * @param url - Full URL to load (e.g. TrueFinals 12lb or 3lb exhibition page).
+ * @returns Promise that resolves with the page HTML as a string. Rejects on navigation timeout or selector timeout.
+ *
+ * Preconditions:
+ * - url is reachable; page renders buttons with id matching "game-EX-*".
+ * Invariants:
+ * - Browser is launched and closed in a try/finally; page is loaded with waitUntil 'domcontentloaded', then waitForSelector('button[id^="game-EX-"]') with 25s timeout. Total navigation timeout 30s.
+ */
 async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
   const browser = await puppeteer.launch({ headless: true }); //launches headless browser
   try {
@@ -22,7 +39,17 @@ async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
   }
 }
 
-/** Convert "HH:MM AM/PM" (e.g. "11:36 AM") to 24h "HH:MM" (e.g. "11:36" or "14:45"). Returns original string if unparseable. */
+/**
+ * Convert a 12-hour time string to 24-hour "HH:MM" format.
+ *
+ * @param timeStr - Time string in "HH:MM AM/PM" or "H:MM AM/PM" form (e.g. "11:36 AM", "2:45 PM"). Leading/trailing whitespace is trimmed.
+ * @returns 24-hour "HH:MM" string (e.g. "11:36", "14:45"), or the original string unchanged if the format does not match.
+ *
+ * Preconditions:
+ * - None; safe to pass any string.
+ * Invariants:
+ * - 12 PM -> 12:xx, 12 AM -> 00:xx; other PM hours add 12, AM hours unchanged. Minutes are preserved. Single-digit hours accepted.
+ */
 function fightTimeTo24h(timeStr: string): string {
   const t = timeStr.trim();
   const match = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -68,6 +95,19 @@ HTML format:
 - "row": raw DOM node for each button
 - .each: cheerio method
 */
+/**
+ * Scrape the TrueFinals exhibition page already loaded into a Cheerio instance.
+ * Finds competition title and all "game-EX-*" buttons; for each fight involving a CRC robot, fetches previous DB state, then insert/update/ignore and send notifications as needed.
+ *
+ * @param $ - Cheerio API instance loaded with the exhibition page HTML (from fetchHtmlWithPuppeteer + cheerio.load).
+ * @returns Promise that resolves when all visible exhibition fights have been processed. Rejects on unexpected errors (DB/notification errors may skip the row and continue).
+ *
+ * Preconditions:
+ * - Page structure: competition from a fixed DOM path; fight rows are button[id^="game-EX-"] with cage/time container and slot-EX-* slots for robot names and win status.
+ * - CRC_ROBOTS and supabaseAdmin are available; robots table has entries for our robot names.
+ * Invariants:
+ * - Fights not involving any CRC robot are skipped. If both win statuses are 0, is_win is null (incomplete). Updates only when fight_time, cage, or is_win change; no duplicate "Updated Fight" when nothing changed. Match identified by (robot_name, opponent_name, competition).
+ */
 //TODO: check if true finals updates more accurately than brettzone
 async function scrapeTrueFinals($: cheerio.CheerioAPI) {
     try{
@@ -215,7 +255,18 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
     }
 }
 
-/** Run 12lb and 3lb TrueFinals scrapes. Used by scheduler and runScrapers. */
+/**
+ * Run the full TrueFinals scrape for both 12lb and 3lb exhibition pages.
+ * Fetches each page with Puppeteer, parses with Cheerio, and runs scrapeTrueFinals to update the DB and send notifications.
+ *
+ * @returns Promise that resolves when both 12lb and 3lb scrapes have completed. Rejects if fetchHtmlWithPuppeteer or scrapeTrueFinals throws.
+ *
+ * Preconditions:
+ * - BASE_URL_12LB and BASE_URL_3LB are reachable and render game-EX-* buttons.
+ * - Environment and DB same as scrapeTrueFinals.
+ * Invariants:
+ * - 12lb is scraped first, then 3lb; each uses a fresh Puppeteer browser session.
+ */
 export async function runScrapeTrueFinals() {
   log('info', 'Fetching 12lb exhibition (Puppeteer)...');
   const html_12LB = await fetchHtmlWithPuppeteer(BASE_URL_12LB);

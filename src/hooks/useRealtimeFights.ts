@@ -2,11 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
-/**
- * Subscribes to Supabase Realtime changes on the `fights` table.
- * When any INSERT, UPDATE, or DELETE occurs, it invalidates the
- * TanStack Query cache so fights data re-fetches automatically.
- */
+/** Subscribes to fights table Realtime; invalidates ['fights'] on any change. Unsubscribes on unmount. */
 export function useRealtimeFights() {
     const queryClient = useQueryClient();
 

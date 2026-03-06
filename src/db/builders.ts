@@ -1,3 +1,4 @@
+/** DB access for builders table (with subteam join). */
 import { supabase } from '../supabaseClient.ts';
 
 export interface Builder {
@@ -6,6 +7,7 @@ export interface Builder {
   subteam_id: number;
 }
 
+/** All builders with subteam; order by builder_id desc. */
 export async function getAllBuilders() {
   const { data, error } = await supabase
     .from('builders')
@@ -16,6 +18,7 @@ export async function getAllBuilders() {
   return data;
 }
 
+/** Single builder by id (with subteam). */
 export async function getBuilderById(builderId: number) {
   const { data, error } = await supabase
     .from('builders')
@@ -27,6 +30,7 @@ export async function getBuilderById(builderId: number) {
   return data;
 }
 
+/** Insert builder; returns created row. */
 export async function createBuilder(builder: Builder) {
   const { data, error } = await supabase
     .from('builders')
@@ -38,6 +42,7 @@ export async function createBuilder(builder: Builder) {
   return data;
 }
 
+/** Update builder by id; returns updated row. */
 export async function updateBuilder(builderId: number, builder: Partial<Builder>) {
   const { data, error } = await supabase
     .from('builders')
@@ -50,6 +55,7 @@ export async function updateBuilder(builderId: number, builder: Partial<Builder>
   return data;
 }
 
+/** Delete builder by id. */
 export async function deleteBuilder(builderId: number) {
   const { error } = await supabase
     .from('builders')
