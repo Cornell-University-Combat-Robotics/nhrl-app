@@ -77,10 +77,13 @@ export default function FightsScreen() {
     const sortedKeys = Object.keys(grouped).sort((a, b) => {
       if (a === 'unspecified') return 1;
       if (b === 'unspecified') return -1;
-      
+
       const dateA = parseCompetitionDate(a);
       const dateB = parseCompetitionDate(b);
-      return dateB.getTime() - dateA.getTime();
+      const yearA = dateA.getFullYear();
+      const yearB = dateB.getFullYear();
+      if (yearB !== yearA) return yearB - yearA; // 2026 -> 2025 -> 2024
+      return dateB.getMonth() - dateA.getMonth(); // Dec -> Nov -> Oct within year
     });
 
     return sortedKeys.map(key => ({
