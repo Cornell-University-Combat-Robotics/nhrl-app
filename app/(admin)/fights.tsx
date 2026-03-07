@@ -1,11 +1,12 @@
 import { useCron, useUpdateCron } from '@/src/hooks/useCRON';
 import { useDeleteFight, useFights } from '@/src/hooks/useFights';
 import { useRealtimeFights } from '@/src/hooks/useRealtimeFights';
-import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
+import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getSortedSections, type FightFilter } from '../fights-section-helper';
 
 /**
  * Admin fights list. Displays all fights grouped by competition date
@@ -19,6 +20,7 @@ export default function FightsScreen() {
   const deleteFight = useDeleteFight();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [filter, setFilter] = useState<FightFilter>('all');
   const updateCron = useUpdateCron();
 
   // Re-fetch fights when screen comes into focus (e.g. after editing/creating a fight)
@@ -62,40 +64,7 @@ export default function FightsScreen() {
     }
   }
 
-  const sections = useMemo(() => {
-    if (!fights) return [];
-
-    const grouped = fights.reduce((acc: any, fight: any) => {
-      const comp = (fight.competition || 'unspecified').toLowerCase();
-      if (!acc[comp]) {
-        acc[comp] = [];
-      }
-      acc[comp].push(fight);
-      return acc;
-    }, {});
-
-    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      if (a === 'unspecified') return 1;
-      if (b === 'unspecified') return -1;
-      
-      const dateA = parseCompetitionDate(a);
-      const dateB = parseCompetitionDate(b);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    return sortedKeys.map(key => ({
-      title: key,
-      data: grouped[key]
-    }));
-  }, [fights]);
-
-  if (isLoading || loadingCron) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
+  const sections = getSortedSections(fights, filter);
 
   if (error) {
     return (
@@ -112,6 +81,26 @@ export default function FightsScreen() {
         keyExtractor={(item: any) => `${item.fight_id}`}
         ListHeaderComponent={() => (
           <>
+            <View style={styles.filterRow}>
+              <TouchableOpacity
+                style={[styles.filterOption, filter === 'current' && styles.filterOptionActive]}
+                onPress={() => setFilter('current')}
+              >
+                <Text style={[styles.filterOptionText, filter === 'current' && styles.filterOptionTextActive]}>Current</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, filter === 'past' && styles.filterOptionActive]}
+                onPress={() => setFilter('past')}
+              >
+                <Text style={[styles.filterOptionText, filter === 'past' && styles.filterOptionTextActive]}>Past</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, filter === 'all' && styles.filterOptionActive]}
+                onPress={() => setFilter('all')}
+              >
+                <Text style={[styles.filterOptionText, filter === 'all' && styles.filterOptionTextActive]}>All</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               style={styles.cronButton}
               onPress={() => handleCron()}
@@ -246,6 +235,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: '#25292e',
+  },
+  filterOption: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#1a1d21',
+    alignItems: 'center',
+  },
+  filterOptionActive: {
+    backgroundColor: '#4CAF50',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#a0a0a0',
+  },
+  filterOptionTextActive: {
+    color: '#fff',
   },
   sectionHeader: {
     paddingVertical: 12,

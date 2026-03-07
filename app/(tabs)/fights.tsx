@@ -1,9 +1,10 @@
 import { useFights } from '@/src/hooks/useFights';
 import { useRealtimeFights } from '@/src/hooks/useRealtimeFights';
-import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelpers';
+import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getSortedSections, type FightFilter } from '../fights-section-helper';
 
 /**
  * Fights list (user-facing). Displays all fights grouped by competition date
@@ -14,6 +15,7 @@ export default function FightsPage() {
   const { data: fights, isLoading, error, refetch } = useFights();
   useRealtimeFights();
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<FightFilter>('all');
 
   // Re-fetch fights when this tab comes into focus (e.g. after admin edits)
   useFocusEffect(
@@ -54,32 +56,7 @@ export default function FightsPage() {
     );
   }
 
-  const sections = useMemo(() => {
-    if (!fights) return [];
-
-    const grouped = fights.reduce((acc: any, fight: any) => {
-      const comp = (fight.competition || 'unspecified').toLowerCase();
-      if (!acc[comp]) {
-        acc[comp] = [];
-      }
-      acc[comp].push(fight);
-      return acc;
-    }, {});
-
-    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      if (a === 'unspecified') return 1;
-      if (b === 'unspecified') return -1;
-      
-      const dateA = parseCompetitionDate(a);
-      const dateB = parseCompetitionDate(b);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    return sortedKeys.map(key => ({
-      title: key,
-      data: grouped[key]
-    }));
-  }, [fights]);
+  const sections = getSortedSections(fights, filter);
 
   /**
    * Renders a single fight card: robot name, win/loss/upcoming badge,
@@ -145,6 +122,26 @@ export default function FightsPage() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterOption, filter === 'current' && styles.filterOptionActive]}
+          onPress={() => setFilter('current')}
+        >
+          <Text style={[styles.filterOptionText, filter === 'current' && styles.filterOptionTextActive]}>Current</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterOption, filter === 'past' && styles.filterOptionActive]}
+          onPress={() => setFilter('past')}
+        >
+          <Text style={[styles.filterOptionText, filter === 'past' && styles.filterOptionTextActive]}>Past</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterOption, filter === 'all' && styles.filterOptionActive]}
+          onPress={() => setFilter('all')}
+        >
+          <Text style={[styles.filterOptionText, filter === 'all' && styles.filterOptionTextActive]}>All</Text>
+        </TouchableOpacity>
+      </View>
       <SectionList
         sections={sections}
         keyExtractor={(item: any) => `${item.fight_id}`}
@@ -177,6 +174,34 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: '#25292e',
+    borderBottomWidth: 1,
+    borderBottomColor: '#3d3d3d',
+  },
+  filterOption: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#1d1f23',
+    alignItems: 'center',
+  },
+  filterOptionActive: {
+    backgroundColor: '#ffd33d',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#a0a0a0',
+  },
+  filterOptionTextActive: {
+    color: '#25292e',
   },
   sectionHeader: {
     paddingVertical: 12,

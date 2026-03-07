@@ -95,7 +95,7 @@ async function upsertFight(f: any) {
     // Find existing by triplet (same as upsert conflict) to decide insert vs update and notif type
     const { data: existing, error: exErr } = await supabaseAdmin
       .from('fights')
-      .select('fight_id, is_win')
+      .select('fight_id, is_win, fight_time, cage')
       .eq('robot_name', f.robot_name)
       .eq('opponent_name', f.opponent_name ?? '')
       .eq('competition', f.competition)
@@ -113,7 +113,7 @@ async function upsertFight(f: any) {
       await createFightNotifBroadcast(payload, supabaseAdmin)
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     } else {
-      if (!wasAlreadyComplete) {
+      if (!wasAlreadyComplete && (payload.fight_time !== existing.fight_time || payload.cage !== existing.cage)) {
         if (payload.is_win === null) {
           await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
         } else {
