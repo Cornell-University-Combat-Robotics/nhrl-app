@@ -1,8 +1,9 @@
 import { Fight } from "@/src/db/fights";
+import { log } from "@/src/utils/log";
 import { parseCompetitionDate } from "@/src/utils/timeHelpers";
 import { useMemo } from "react";
 
-/** Hardcoded "current" competition: only fights for this (lowercased) title are shown when filter is "current". */
+/** Hardcoded "current" competition substring (lowercased). Sections whose title contains this (e.g. "NHRL march 2026 3lb") are shown when filter is "current". */
 export const CURRENT_COMPETITION = "march 2026";
 
 export type FightFilter = "current" | "past" | "all";
@@ -12,7 +13,7 @@ export type FightFilter = "current" | "past" | "all";
  * Groups fights by competition (lowercased); competitions with no name are grouped under "unspecified".
  * Sections are sorted reverse chronologically: newest year first (2026 → 2025 → 2024), then newest month first within each year (Dec → Nov → Oct). "Unspecified" is always last.
  * @param fights - Flat array of fights (e.g. from useFights().data).
- * @param filter - "current" = only CURRENT_COMPETITION; "past" = exclude CURRENT_COMPETITION; "all" = no filter.
+ * @param filter - "current" = only sections whose title contains CURRENT_COMPETITION; "past" = exclude those; "all" = no filter.
  * @returns Array of `{ title: string; data: Fight[] }` for SectionList's `sections` prop. Memoized on `fights` and `filter`.
  */
 export function getSortedSections(fights: Fight[] | undefined, filter: FightFilter = "all") {
@@ -42,11 +43,11 @@ export function getSortedSections(fights: Fight[] | undefined, filter: FightFilt
             title: key,
             data: grouped[key],
         }));
-
+        
         if (filter === "current") {
-            sections = sections.filter((s) => s.title.toLowerCase() === CURRENT_COMPETITION);
+            sections = sections.filter((s) => s.title.toLowerCase().includes(CURRENT_COMPETITION));
         } else if (filter === "past") {
-            sections = sections.filter((s) => s.title.toLowerCase() !== CURRENT_COMPETITION);
+            sections = sections.filter((s) => !s.title.toLowerCase().includes(CURRENT_COMPETITION));
         }
 
         return sections;
