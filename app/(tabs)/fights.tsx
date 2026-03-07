@@ -4,6 +4,7 @@ import { formatTimeForDisplay, parseCompetitionDate } from '@/src/utils/timeHelp
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, View } from 'react-native';
+import { getSortedSections } from '../fights-section-helper';
 
 /**
  * Fights list (user-facing). Displays all fights grouped by competition date
@@ -54,32 +55,7 @@ export default function FightsPage() {
     );
   }
 
-  const sections = useMemo(() => {
-    if (!fights) return [];
-
-    const grouped = fights.reduce((acc: any, fight: any) => {
-      const comp = (fight.competition || 'unspecified').toLowerCase();
-      if (!acc[comp]) {
-        acc[comp] = [];
-      }
-      acc[comp].push(fight);
-      return acc;
-    }, {});
-
-    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      if (a === 'unspecified') return 1;
-      if (b === 'unspecified') return -1;
-      
-      const dateA = parseCompetitionDate(a);
-      const dateB = parseCompetitionDate(b);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    return sortedKeys.map(key => ({
-      title: key,
-      data: grouped[key]
-    }));
-  }, [fights]);
+  const sections = getSortedSections(fights);
 
   /**
    * Renders a single fight card: robot name, win/loss/upcoming badge,

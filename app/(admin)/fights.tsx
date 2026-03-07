@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getSortedSections } from '../fights-section-helper';
 
 /**
  * Admin fights list. Displays all fights grouped by competition date
@@ -62,43 +63,7 @@ export default function FightsScreen() {
     }
   }
 
-  const sections = useMemo(() => {
-    if (!fights) return [];
-
-    const grouped = fights.reduce((acc: any, fight: any) => {
-      const comp = (fight.competition || 'unspecified').toLowerCase();
-      if (!acc[comp]) {
-        acc[comp] = [];
-      }
-      acc[comp].push(fight);
-      return acc;
-    }, {});
-
-    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      if (a === 'unspecified') return 1;
-      if (b === 'unspecified') return -1;
-
-      const dateA = parseCompetitionDate(a);
-      const dateB = parseCompetitionDate(b);
-      const yearA = dateA.getFullYear();
-      const yearB = dateB.getFullYear();
-      if (yearB !== yearA) return yearB - yearA; // 2026 -> 2025 -> 2024
-      return dateB.getMonth() - dateA.getMonth(); // Dec -> Nov -> Oct within year
-    });
-
-    return sortedKeys.map(key => ({
-      title: key,
-      data: grouped[key]
-    }));
-  }, [fights]);
-
-  if (isLoading || loadingCron) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
+  const sections = getSortedSections(fights);
 
   if (error) {
     return (
