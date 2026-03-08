@@ -4,7 +4,7 @@ import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getSortedSections, type FightFilter } from '../fights-section-helper';
+import { computeSortedSections, type FightFilter } from '../fights-section-helper';
 
 /**
  * Fights list (user-facing). Displays all fights grouped by competition date
@@ -22,6 +22,11 @@ export default function FightsPage() {
     useCallback(() => {
       refetch();
     }, [refetch])
+  );
+
+  const sections = useMemo(
+    () => computeSortedSections(fights, filter),
+    [fights, filter]
   );
 
   /** Pull-to-refresh handler; triggers manual refetch of fights data. */
@@ -55,8 +60,6 @@ export default function FightsPage() {
       </View>
     );
   }
-
-  const sections = getSortedSections(fights, filter);
 
   /**
    * Renders a single fight card: robot name, win/loss/upcoming badge,

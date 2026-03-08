@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getSortedSections, type FightFilter } from '../fights-section-helper';
+import { computeSortedSections, type FightFilter } from '../fights-section-helper';
 
 /**
  * Admin fights list. Displays all fights grouped by competition date
@@ -28,6 +28,11 @@ export default function FightsScreen() {
     useCallback(() => {
       refetch();
     }, [refetch])
+  );
+
+  const sections = useMemo(
+    () => computeSortedSections(fights, filter),
+    [fights, filter]
   );
 
   /** Opens the delete confirmation modal for the given fight. */
@@ -63,8 +68,6 @@ export default function FightsScreen() {
       Alert.alert('Error', `Failed to update season: ${err.message || 'Unknown error'}`);
     }
   }
-
-  const sections = getSortedSections(fights, filter);
 
   if (error) {
     return (
