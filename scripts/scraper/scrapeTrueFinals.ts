@@ -10,9 +10,9 @@ import { log } from '../../src/utils/log.ts';
 import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** TrueFinals 12lb exhibition page URL. */
-const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_feb26_12lb/exhibition';
+const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_mar26_12lb_/exhibition';
 /** TrueFinals 3lb exhibition page URL. */
-const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_feb26_3lb/exhibition';
+const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_mar26_3lb_/exhibition';
 
 /**
  * Fetch the full HTML of a URL after JavaScript has run, using a headless browser.
@@ -227,7 +227,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             }else{
               //each fight triplet (robot, opponent, competition) is constrained to be unique in supabase
               //check if fight time, cage, or win status has changed
-              if(prev.is_win !== is_win || prev.fight_time !== fight_time || prev.cage !== cage) {
+              if(prev.is_win !== is_win && (prev.fight_time !== fight_time || prev.cage !== cage)) {
                 //fight is complete
                 const { error } = await supabaseAdmin.from('fights')
                   .upsert(payload, {
