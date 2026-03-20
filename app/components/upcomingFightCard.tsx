@@ -1,7 +1,7 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useEffect, useState } from 'react';
-import { Image, View, Text, StyleSheet } from 'react-native';
+import { Image, View, ScrollView, Text, StyleSheet } from 'react-native';
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
@@ -18,16 +18,17 @@ async function getUpcomingFights() {
 }
 
 async function getRobotPhotoURL(name: string) {
+    const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
     const baseUrlTail = "&amp;thumb=1";
-    const url = baseUrlHead + encodeURIComponent(name) + baseUrlTail;
+    const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
     return url;
 }
 
 //TODO: add supabse realtime
 export default function UpcomingFightCard() {
     const [fights, setFights] = useState<any[]>([]);
-    const [photoUrl, setPhotoUrl] = useState<string>("");
+    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
     useEffect(() => {
         getUpcomingFights().then(f => {
@@ -35,41 +36,46 @@ export default function UpcomingFightCard() {
             log('info', 'Fetched fights:');
         });
         //make lower case + remove all non-alphanumeric
-        const refinedName = fights[0]?.robot_name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '') || "";
-        getRobotPhotoURL(refinedName).then(url => {
-            setPhotoUrl(url);
-            log('info', 'Fetched photo URL: ' + url);
-        });
+        fights?.map(fight =>
+            getRobotPhotoURL(fight?.robot_name || "").then(url => {
+                setPhotoUrls(prev => [...prev, url]);
+                log('info', 'Fetched photo URL: ' + url);
+            })
+        );
     }, []); //only run once on component mount
 
     return (
         <>
-            <View style={styles.card}>
-                <View style={styles.topRow}>
-                    <View style={styles.ourRobot}>
-                        <Image
-                            source={{ uri: photoUrl }}
-                            style={styles.photo}
-                        />
-                        <Text style={styles.ourRobotText}>
-                            {fights[0]?.robot_name}
-                        </Text>
+            <ScrollView>
+                {fights.map((fight, index) => (
+                    <View style={styles.card} key={index}>
+                        <View style={styles.topRow}>
+                            <View style={styles.ourRobot}>
+                                <Image
+                                    source={{ uri: photoUrls[index] }}
+                                    style={styles.photo}
+                                />
+                                <Text style={styles.ourRobotText}>
+                                    {fight?.robot_name}
+                                </Text>
+                            </View>
+                            <View style={styles.cage}>
+                                <Text style={styles.cageText}>{
+                                    `Cage ${fight?.cage}`
+                                }</Text>
+                            </View>
+                        </View>
+                        <View style={styles.bottomRow}>
+                            <Text style={styles.text}>{
+                                `Opponent Name: ${fight?.opponent_name}`
+                            }</Text>
+                            <Text style={styles.text}>{
+                                `Live in: ${fight?.fight_time}`
+                            }</Text>
+                        </View>
                     </View>
-                    <View style={styles.cage}>
-                        <Text style={styles.cageText}>{
-                            `Cage: ${fights[0]?.cage}`
-                        }</Text>
-                    </View>
-                </View>
-                <View style={styles.bottomRow}>
-                    <Text style={styles.text}>{
-                        `Opponent Name: ${fights[0]?.opponent_name}`
-                    }</Text>
-                    <Text style={styles.text}>{
-                        `Live in: ${fights[0]?.fight_time}`
-                    }</Text>
-                </View>
-            </View>
+                ))}
+            </ScrollView>
         </>
     );
 }
@@ -78,7 +84,8 @@ const styles = StyleSheet.create({
     card: {
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
-        height: 150
+        height: 150,
+        marginBottom: 10
         //manually flexDirection = column
     },
     topRow: {
