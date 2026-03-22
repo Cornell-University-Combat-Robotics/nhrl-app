@@ -32,24 +32,27 @@ export default function UpcomingFightCard() {
     const [renderList, setRenderList] = useState(false);
     const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const [showListOpener, setShowListOpener] = useState(false);
 
     const toggleList = useCallback(() => {
-        //if currently rendering list, want to close it (slide up + fade out), if currently not rendering list, want to open it (slide down + fade in)
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: renderList ? 0 : 10,
-                duration: 300, //Animate this value from its current value → toValue over duration milliseconds
-                useNativeDriver: true
-            }),
-            Animated.timing(opacityAnim, {
-                toValue: renderList ? 0 : 1, // fade out if closing, fade in if opening
-                duration: 300,
-                useNativeDriver: true
-            })
-        ]).start(() => {
-            //runs only after animation is done
-            setRenderList(!renderList);
-        });
+        const opening = !renderList;
+
+        if (opening) {
+            // mount, and THEN animate in
+            setRenderList(true);
+            Animated.parallel([
+                Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
+                Animated.timing(opacityAnim, { toValue: 1, duration: 450, useNativeDriver: true })
+            ]).start();
+        } else {
+            // animate out, then set closed
+            Animated.parallel([
+                Animated.timing(slideAnim, { toValue: -10, duration: 300, useNativeDriver: true }),
+                Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: true })
+            ]).start(() => {
+                setRenderList(false); // unmount after animation
+            });
+        }
     }, [renderList]); //only rerender when mount & when renderList changes
 
     useEffect(() => {
@@ -66,27 +69,43 @@ export default function UpcomingFightCard() {
         );
     }, []); //only run once on component mount
 
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+
+        if (!renderList) {
+            //delay in showing listOpener after list closes
+            timer = setTimeout(() => {
+                setShowListOpener(true);
+            }, 100);
+        } else {
+            //hide immediately when list opens
+            setShowListOpener(false);
+        }
+
+        return () => clearTimeout(timer);
+    }, [renderList]);
+
     return (
         <>
             <TouchableOpacity
                 onPress={() => { toggleList() }}
             >
                 <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]} />
-                {!renderList &&
+                {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
             </TouchableOpacity>
-
-            <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
-                <ScrollView>
-                    {fights
-                        .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
-                        .map((fight, index) => (
-                            <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index + 1]} />
-                        ))}
-                </ScrollView>
-            </Animated.View>
-
+            {renderList &&
+                <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
+                    <ScrollView>
+                        {fights
+                            .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
+                            .map((fight, index) => (
+                                <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index + 1]} />
+                            ))}
+                    </ScrollView>
+                </Animated.View>
+            }
         </>
     );
 }
