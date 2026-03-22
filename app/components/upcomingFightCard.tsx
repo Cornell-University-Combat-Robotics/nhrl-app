@@ -1,7 +1,7 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
-import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
@@ -25,11 +25,32 @@ async function getRobotPhotoURL(name: string) {
     return url;
 }
 
-//TODO: add supabse realtime
+//TODO: add supabse realtime, doesnt respond to db updates rn
 export default function UpcomingFightCard() {
     const [fights, setFights] = useState<any[]>([]);
     const [photoUrls, setPhotoUrls] = useState<string[]>([]);
     const [renderList, setRenderList] = useState(false);
+    const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
+    const opacityAnim = useRef(new Animated.Value(0)).current;
+
+    const toggleList = useCallback(() => {
+        //if currently rendering list, want to close it (slide up + fade out), if currently not rendering list, want to open it (slide down + fade in)
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: renderList ? 0 : 10,
+                duration: 300, //Animate this value from its current value → toValue over duration milliseconds
+                useNativeDriver: true
+            }),
+            Animated.timing(opacityAnim, {
+                toValue: renderList ? 0 : 1, // fade out if closing, fade in if opening
+                duration: 300,
+                useNativeDriver: true
+            })
+        ]).start(() => {
+            //runs only after animation is done
+            setRenderList(!renderList);
+        });
+    }, [renderList]); //only rerender when mount & when renderList changes
 
     useEffect(() => {
         getUpcomingFights().then(f => {
@@ -48,27 +69,29 @@ export default function UpcomingFightCard() {
     return (
         <>
             <TouchableOpacity
-                onPress={() => { setRenderList(!renderList) }}
+                onPress={() => { toggleList() }}
             >
-                <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]}/>
-                {!renderList && 
+                <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]} />
+                {!renderList &&
                     <View style={styles.listOpener}></View>
                 }
             </TouchableOpacity>
-            {renderList && (
+
+            <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
                 <ScrollView>
                     {fights
-                    .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
-                    .map((fight, index) => (
-                        <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index]}/>
-                    ))}
+                        .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
+                        .map((fight, index) => (
+                            <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index + 1]} />
+                        ))}
                 </ScrollView>
-            )}
+            </Animated.View>
+
         </>
     );
 }
 
-function IndivFightCard({fight, photoUrl}: { fight: any, photoUrl: string }) {
+function IndivFightCard({ fight, photoUrl }: { fight: any, photoUrl: string }) {
     return (
         <View style={styles.card}>
             <View style={styles.topRow}>
@@ -161,7 +184,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#3A3A3A",
         height: 165,
         borderRadius: 15,
-        left: 20, 
+        left: 20,
         right: 20,
         position: 'absolute',
         zIndex: 1
