@@ -1,12 +1,12 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useEffect, useState } from 'react';
-import { Image, View, ScrollView, Text, StyleSheet } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
-        .select('robot_name, opponent_name, cage, fight_time');
+        .select('fight_id, robot_name, opponent_name, cage, fight_time');
 
     if (error || !data) {
         console.error('Error fetching fights:', error);
@@ -29,6 +29,7 @@ async function getRobotPhotoURL(name: string) {
 export default function UpcomingFightCard() {
     const [fights, setFights] = useState<any[]>([]);
     const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+    const [renderList, setRenderList] = useState(false);
 
     useEffect(() => {
         getUpcomingFights().then(f => {
@@ -46,37 +47,55 @@ export default function UpcomingFightCard() {
 
     return (
         <>
-            <ScrollView>
-                {fights.map((fight, index) => (
-                    <View style={styles.card} key={index}>
-                        <View style={styles.topRow}>
-                            <View style={styles.ourRobot}>
-                                <Image
-                                    source={{ uri: photoUrls[index] }}
-                                    style={styles.photo}
-                                />
-                                <Text style={styles.ourRobotText}>
-                                    {fight?.robot_name}
-                                </Text>
-                            </View>
-                            <View style={styles.cage}>
-                                <Text style={styles.cageText}>{
-                                    `Cage ${fight?.cage}`
-                                }</Text>
-                            </View>
-                        </View>
-                        <View style={styles.bottomRow}>
-                            <Text style={styles.text}>{
-                                `Opponent Name: ${fight?.opponent_name}`
-                            }</Text>
-                            <Text style={styles.text}>{
-                                `Live in: ${fight?.fight_time}`
-                            }</Text>
-                        </View>
-                    </View>
-                ))}
-            </ScrollView>
+            <TouchableOpacity
+                onPress={() => { setRenderList(!renderList) }}
+            >
+                <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]}/>
+                {!renderList && 
+                    <View style={styles.listOpener}></View>
+                }
+            </TouchableOpacity>
+            {renderList && (
+                <ScrollView>
+                    {fights
+                    .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
+                    .map((fight, index) => (
+                        <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index]}/>
+                    ))}
+                </ScrollView>
+            )}
         </>
+    );
+}
+
+function IndivFightCard({fight, photoUrl}: { fight: any, photoUrl: string }) {
+    return (
+        <View style={styles.card}>
+            <View style={styles.topRow}>
+                <View style={styles.ourRobot}>
+                    <Image
+                        source={{ uri: photoUrl }}
+                        style={styles.photo}
+                    />
+                    <Text style={styles.ourRobotText}>
+                        {fight?.robot_name}
+                    </Text>
+                </View>
+                <View style={styles.cage}>
+                    <Text style={styles.cageText}>{
+                        `Cage ${fight?.cage}`
+                    }</Text>
+                </View>
+            </View>
+            <View style={styles.bottomRow}>
+                <Text style={styles.text}>{
+                    `Opponent Name: ${fight?.opponent_name}`
+                }</Text>
+                <Text style={styles.text}>{
+                    `Live in: ${fight?.fight_time}`
+                }</Text>
+            </View>
+        </View>
     );
 }
 
@@ -85,7 +104,9 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
         height: 150,
-        marginBottom: 10
+        marginBottom: 10,
+        zIndex: 2,
+        position: 'relative'
         //manually flexDirection = column
     },
     topRow: {
@@ -135,5 +156,14 @@ const styles = StyleSheet.create({
     ourRobot: {
         flexDirection: 'row',
         alignItems: 'center'
+    },
+    listOpener: {
+        backgroundColor: "#3A3A3A",
+        height: 165,
+        borderRadius: 15,
+        left: 20, 
+        right: 20,
+        position: 'absolute',
+        zIndex: 1
     }
 })
