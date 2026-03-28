@@ -101,7 +101,7 @@ export default function UpcomingFightCard() {
                         {fights
                             .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
                             .map((fight, index) => (
-                                <IndivFightCard key={fight.id} fight={fight} photoUrl={photoUrls[index + 1]} />
+                                <IndivFightCard key={index} fight={fight} photoUrl={photoUrls[index + 1]} />
                             ))}
                     </ScrollView>
                 </Animated.View>

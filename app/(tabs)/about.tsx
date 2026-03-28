@@ -1,7 +1,6 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRobots } from '@/src/hooks/useRobots';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import UpcomingFightCard from '../components/upcomingFightCard';
 
 /**
  * About page. Displays a personalized greeting (or login prompt) and lists
@@ -21,8 +20,6 @@ export default function AboutScreen() {
         ) : (
           <Text style={styles.text}>Welcome! Please log in to access admin features.</Text>
         )}
-
-        <UpcomingFightCard/>
 
         <Text style={styles.sectionTitle}>Robots Database</Text>
 
