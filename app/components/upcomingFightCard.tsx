@@ -17,6 +17,7 @@ async function getUpcomingFights() {
     }
 }
 
+//TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
 async function getRobotPhotoURL(name: string) {
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
