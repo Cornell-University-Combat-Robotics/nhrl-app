@@ -43,6 +43,10 @@ export default function TrackedRobots() {
         }))
     }
 
+    const countChecked = () => {
+        return Object.values(checked).filter(value => value == true).length;
+    }
+
     useEffect(() => {
         getRobots().then(r => setRobots(r));
         robots.map((r, i) => {
@@ -65,7 +69,9 @@ export default function TrackedRobots() {
             >
                 <Text style={styles.text}>Tracked Robots</Text>
             </TouchableOpacity>
-            {isVisible && <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} />}
+            {isVisible &&
+                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked}/>
+            }
         </>
     );
 }
@@ -76,22 +82,30 @@ function TrackedPopUp({
     robots,
     photoUrls,
     checked,
-    toggleChecked
+    toggleChecked,
+    countChecked
 }: {
     onClose: () => void,
     robots: any[],
     photoUrls: string[],
     checked: Record<number, boolean>,
-    toggleChecked: (id: number) => void
+    toggleChecked: (id: number) => void,
+    countChecked: () => number
 }) {
     //note that states here get destroyed every time pop up closes, so should keep states in parent TrackedRobots instead
     return (
         <>
             <Portal>
+                <View style={styles.overlay} /> {/* makes everything outside pop up blurry */}
                 <View style={styles.popup}>
-                    <Text style={styles.popupTitle}>
-                        Tracked Robots
-                    </Text>
+                    <View style={styles.titleRow}>
+                        <Text style={styles.popupTitle}>
+                            Tracked Robots
+                        </Text>
+                        <View style={styles.checkedCount}>
+                            <Text style={{ color: "#FFFFFF", fontSize: 16}}>{countChecked()}</Text>
+                        </View>
+                    </View>
 
                     {robots.map((r, i) => (
                         <View key={i} style={styles.row}>
@@ -99,7 +113,7 @@ function TrackedPopUp({
                                 source={{ uri: photoUrls[i] }}
                                 style={styles.photo}
                             />
-                            <View style={{ marginLeft: 20, flex: 1 }}>
+                            <View style={styles.robotText}>
                                 <Text style={styles.robotName}>{r.robot_name}</Text>
                                 <Text style={styles.subteamName}>{r.subteam}</Text>
                             </View>
@@ -125,13 +139,18 @@ function TrackedPopUp({
 }
 
 const styles = StyleSheet.create({
+    overlay: {
+        ...StyleSheet.absoluteFillObject, //shorthand for: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
     popup: {
         backgroundColor: "#2C2C2C",
         position: "absolute",
-        top: 175,
-        bottom: 175,
+        top: 125,
         left: 20,
-        right: 20
+        right: 20,
+        borderRadius: 10,
+        overflow: 'hidden',  //forces children to respect border radius
     },
     button: {
         backgroundColor: "#FFFFFF",
@@ -148,10 +167,10 @@ const styles = StyleSheet.create({
         fontWeight: "bold"
     },
     popupTitle: {
-        fontSize: 18,
+        fontSize: 20,
         color: "#FFFFFF",
         fontWeight: "bold",
-        margin: 10,
+        marginVertical: 15,
         alignSelf: "center"
     },
     robotName: {
@@ -169,7 +188,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginHorizontal: 30,
-        marginVertical: 5
+        marginVertical: 5,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#444444",
     },
     photo: {
         marginLeft: 10,
@@ -178,5 +200,22 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         borderColor: '#ffffff',
         borderWidth: 1
+    },
+    robotText: {
+        marginLeft: 20,
+        flex: 1
+    },
+    titleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 15
+    },
+    checkedCount: {
+        borderRadius: 10,
+        backgroundColor: "#842D2D",
+        paddingHorizontal: 10,
+        paddingVertical: 2,
+        borderColor: "#B21C1C"
     }
 });
