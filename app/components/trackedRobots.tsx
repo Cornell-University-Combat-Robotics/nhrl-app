@@ -1,4 +1,5 @@
 import { supabase } from "@/src/supabaseClient";
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Checkbox, Portal } from "react-native-paper";
@@ -18,7 +19,7 @@ async function getRobots() {
 }
 
 //TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
-async function getRobotPhotoURL(name: string) {
+function getRobotPhotoURL(name: string) {
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
     const baseUrlTail = "&amp;thumb=1";
@@ -48,14 +49,19 @@ export default function TrackedRobots() {
     }
 
     useEffect(() => {
-        getRobots().then(r => setRobots(r));
-        robots.map((r, i) => {
-            getRobotPhotoURL(r.robot_name).then(url => setPhotoUrls(prev => [...prev, url]));
-            setChecked(prev => ({
-                ...prev,
-                [i]: false
-            }))
-        })
+        getRobots().then(r => {
+            setRobots(r);
+            robots.map((r, i) => {
+                let url = getRobotPhotoURL(r.robot_name);
+                setPhotoUrls(prev => [...prev, url]);
+                setChecked(prev => ({
+                    ...prev,
+                    [i]: false
+                }))
+            })
+        }
+        );
+
     }, []);
 
     return (
@@ -68,9 +74,10 @@ export default function TrackedRobots() {
                 }}
             >
                 <Text style={styles.text}>Tracked Robots</Text>
+                <AntDesign name="bars" size={20} color="#000000" style={{ marginLeft: 5 }} />
             </TouchableOpacity>
             {isVisible &&
-                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked}/>
+                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked} />
             }
         </>
     );
@@ -96,14 +103,15 @@ function TrackedPopUp({
     return (
         <>
             <Portal>
-                <View style={styles.overlay} /> {/* makes everything outside pop up blurry */}
+                <View style={styles.overlay} //makes everything outside pop up blurry 
+                />
                 <View style={styles.popup}>
                     <View style={styles.titleRow}>
                         <Text style={styles.popupTitle}>
                             Tracked Robots
                         </Text>
                         <View style={styles.checkedCount}>
-                            <Text style={{ color: "#FFFFFF", fontSize: 16}}>{countChecked()}</Text>
+                            <Text style={{ color: "#FFFFFF", fontSize: 16 }}>{countChecked()}</Text>
                         </View>
                     </View>
 
@@ -153,13 +161,13 @@ const styles = StyleSheet.create({
         overflow: 'hidden',  //forces children to respect border radius
     },
     button: {
+        flexDirection: "row",
         backgroundColor: "#FFFFFF",
-        borderRadius: 15,
+        borderRadius: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         alignItems: "center",
         justifyContent: "center",
-        margin: 10,
-        width: 150,
-        height: 40
     },
     text: {
         color: "#000000",

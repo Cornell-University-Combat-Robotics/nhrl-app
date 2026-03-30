@@ -18,11 +18,12 @@ async function getUpcomingFights() {
 }
 
 //TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
-async function getRobotPhotoURL(name: string) {
+function getRobotPhotoURL(name: string) {
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
     const baseUrlTail = "&amp;thumb=1";
     const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
+    console.log("Generated photo URL for " + name + ": " + url);
     return url;
 }
 
@@ -60,14 +61,13 @@ export default function UpcomingFightCard() {
         getUpcomingFights().then(f => {
             setFights(f);
             log('info', 'Fetched fights:');
-        });
-        //make lower case + remove all non-alphanumeric
-        fights?.map(fight =>
-            getRobotPhotoURL(fight?.robot_name || "").then(url => {
+
+            //make lower case + remove all non-alphanumeric
+            fights.map(fight => {
+                let url = getRobotPhotoURL(fight?.robot_name || "");
                 setPhotoUrls(prev => [...prev, url]);
-                log('info', 'Fetched photo URL: ' + url);
-            })
-        );
+            });
+        });
     }, []); //only run once on component mount
 
     useEffect(() => {

@@ -5,8 +5,8 @@ import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import computeSortedSections, {type FightFilter } from '../fights-section-helper';
+import { Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import computeSortedSections, { type FightFilter } from '../components/fights-section-helper';
 
 /**
  * Admin fights list. Displays all fights grouped by competition date

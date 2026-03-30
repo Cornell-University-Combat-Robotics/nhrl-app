@@ -1,12 +1,21 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollView, StyleSheet, Text, View, Image } from "react-native";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightCard from "../components/upcomingFightCard";
+import crcSymbol from '../../assets/images/crc-symbol.png';   
 
 export default function HomePage() {
     return (
-        <>
-            <ScrollView style={styles.container}>
+        <LinearGradient
+            colors={['#842D2D', '#000000']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            locations={[0, 0.40]}  //black by 40% down
+            style={styles.container}
+        >
+            <ScrollView style={{paddingTop: 50}}>
                 <View style={styles.topNav}>
+                    <Image source={crcSymbol} style={{width: 50, height: 50}}/>
                     <TrackedRobots />
                 </View>
                 <View>
@@ -14,14 +23,14 @@ export default function HomePage() {
                     <UpcomingFightCard />
                 </View>
             </ScrollView>
-        </>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         padding: 20,
-        backgroundColor: "#1E1E1E"
+        ...StyleSheet.absoluteFillObject
     },
     topNav: {
         flexDirection: "row",
