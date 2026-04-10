@@ -4,7 +4,7 @@ import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { computeSortedSections, type FightFilter } from '../fights-section-helper';
+import computeSortedSections, { type FightFilter } from '../components/fights-section-helper';
 
 /**
  * Fights list (user-facing). Displays all fights grouped by competition date

@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState, Platform } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,14 +64,16 @@ export default function RootLayout() {
 
   return (
     //wrap in QueryClientProvider for a GLOBAL storage location to store cached data, track loading states, or manage refetches.
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="(admin)" />
-        </Stack>
-      </QueryClientProvider>
-    </AuthProvider>
+    <PaperProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(admin)" />
+          </Stack>
+        </QueryClientProvider>
+      </AuthProvider>
+    </PaperProvider>
   );
 }

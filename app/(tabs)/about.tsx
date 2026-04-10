@@ -14,7 +14,7 @@ export default function AboutScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>About</Text>
-        
+
         {session ? (
           <Text style={styles.text}>Welcome, {user?.email}!</Text>
         ) : (
@@ -22,7 +22,7 @@ export default function AboutScreen() {
         )}
 
         <Text style={styles.sectionTitle}>Robots Database</Text>
-        
+
         {isLoading ? (
           <ActivityIndicator size="large" color="#fff" style={styles.loader} />
         ) : error ? (

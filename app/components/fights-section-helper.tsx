@@ -13,7 +13,7 @@ export type FightSection = { title: string; data: Fight[] };
  * Groups by competition (lowercased); "unspecified" last; sorted reverse chronologically (year then month).
  * @param filter - "current" = only sections whose title contains CURRENT_COMPETITION; "past" = exclude those; "all" = no filter.
  */
-export function computeSortedSections(fights: Fight[] | undefined, filter: FightFilter = "all"): FightSection[] {
+export default function computeSortedSections(fights: Fight[] | undefined, filter: FightFilter = "all"): FightSection[] {
     if (!fights) return [];
 
     const grouped = fights.reduce((acc: Record<string, Fight[]>, fight: Fight) => {
