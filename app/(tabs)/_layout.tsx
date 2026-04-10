@@ -1,7 +1,13 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Tabs } from 'expo-router';
-import { Text, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
+import PagerView from 'react-native-pager-view';
+import HomePage from './home';
+import AboutScreen from './about';
+import FightsPage from './fights';
+import Index from './index';
 
 /**
  * Tab navigator layout for the main app.
@@ -12,6 +18,8 @@ export default function TabLayout() {
   const { session, isAdmin } = useAuth();
 
   return (
+    <>
+    <SwipeNavBar/>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#ffd33d',
@@ -90,5 +98,41 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }
+
+function SwipeNavBar(){
+  const [curPage, setCurPage] = useState(0); //inital page = 0
+
+  return (
+    <>
+      <View style={styles.container}> 
+        <PagerView 
+          style={styles.container}
+          initialPage={0}
+          onPageSelected={(e) => setCurPage(e.nativeEvent.position)}
+        > 
+          <View key="home"> 
+            <HomePage/>
+          </View>
+          <View key="about">
+            <AboutScreen/>
+          </View>
+          <View key="fights">
+            <FightsPage/>
+          </View>
+          <View key="index">
+            <Index/>
+          </View>
+        </PagerView>
+      </View>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1 //fill up all space in parent
+  }
+});
