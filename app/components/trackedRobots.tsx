@@ -22,7 +22,7 @@ async function getRobots() {
 function getRobotPhotoURL(name: string) {
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
-    const baseUrlTail = "&amp;thumb=1";
+    const baseUrlTail = "&thumb=1";
     const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
     return url;
 }
@@ -51,7 +51,7 @@ export default function TrackedRobots() {
     useEffect(() => {
         getRobots().then(r => {
             setRobots(r);
-            robots.map((r, i) => {
+            r.map((r, i) => {
                 let url = getRobotPhotoURL(r.robot_name);
                 setPhotoUrls(prev => [...prev, url]);
                 setChecked(prev => ({

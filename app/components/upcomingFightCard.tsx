@@ -21,7 +21,7 @@ async function getUpcomingFights() {
 function getRobotPhotoURL(name: string) {
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
-    const baseUrlTail = "&amp;thumb=1";
+    const baseUrlTail = "&thumb=1";
     const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
     console.log("Generated photo URL for " + name + ": " + url);
     return url;
@@ -59,11 +59,11 @@ export default function UpcomingFightCard() {
 
     useEffect(() => {
         getUpcomingFights().then(f => {
-            setFights(f);
+            setFights(f); //does NOT update state var immediately, React SCHEDULES a re-render for later
             log('info', 'Fetched fights:');
 
             //make lower case + remove all non-alphanumeric
-            fights.map(fight => {
+            f.map(fight => {
                 let url = getRobotPhotoURL(fight?.robot_name || "");
                 setPhotoUrls(prev => [...prev, url]);
             });
