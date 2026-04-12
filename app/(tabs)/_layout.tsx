@@ -45,7 +45,6 @@ export default function TabLayout() {
   return (
     <>
       <SwipeNavBar />
-
     </>
   );
 }

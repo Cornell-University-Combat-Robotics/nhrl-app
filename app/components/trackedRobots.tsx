@@ -66,19 +66,56 @@ export default function TrackedRobots() {
 
     return (
         <>
+            <TrackedButton setVisibility={setVisibility} robots={robots} checked={checked} numChecked={countChecked()} photoUrls={photoUrls} />
+            {isVisible &&
+                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked} />
+            }
+        </>
+    );
+}
+
+function TrackedButton({
+    setVisibility,
+    robots,
+    checked,
+    numChecked,
+    photoUrls
+}:{ 
+    setVisibility: React.Dispatch<React.SetStateAction<boolean>>,
+    robots: any[],
+    checked: Record<number, boolean>,
+    numChecked: number,
+    photoUrls: string[]
+}) {
+    //to track number of photos in button, and to help render the "+2" when >2 robots selected
+    const overTwo = numChecked > 2;
+    const allChecked = robots.map((_, i) => i).filter(i => checked[i]);
+    const renderedRobotIdxs = overTwo ? allChecked.slice(0,2) : allChecked;
+
+    return (
+        <>
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => {
-                    setVisibility(!isVisible)
+                    setVisibility(v => !v)
                     console.log("pressed tracking button")
                 }}
             >
                 <Text style={styles.text}>Tracked Robots</Text>
-                <AntDesign name="bars" size={20} color="#000000" style={{ marginLeft: 5 }} />
+                {numChecked == 0 ? (
+                    <AntDesign name="plus" size={20} color="#000000" style={{ marginLeft: 5 }} />
+                ) : (
+                    <View style={styles.plusPhotoContainer}>
+                        {renderedRobotIdxs.map((i, _) => 
+                            checked[i] &&
+                            <Image key={i} source={{ uri: photoUrls[i] }} style={styles.plusPhoto} />
+                        )}
+                        {overTwo && 
+                        <Text style={[styles.plusPhoto, styles.plusText, {backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2}]}>+2</Text>
+                        }
+                    </View>
+                )}
             </TouchableOpacity>
-            {isVisible &&
-                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked} />
-            }
         </>
     );
 }
@@ -225,5 +262,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 2,
         borderColor: "#B21C1C"
+    },
+    plusPhoto: {
+        width: 20,
+        height: 20,
+        borderRadius: 100,
+        backgroundColor: '#4B4B4B',
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+        marginLeft: -5
+    },
+    plusPhotoContainer: {
+        marginLeft: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    plusText:{
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold'
     }
 });
