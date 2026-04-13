@@ -111,7 +111,7 @@ function TrackedButton({
                             <Image key={i} source={{ uri: photoUrls[i] }} style={styles.plusPhoto} />
                         )}
                         {overTwo && 
-                        <Text style={[styles.plusPhoto, styles.plusText, {backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2}]}>+2</Text>
+                        <Text style={[styles.plusPhoto, styles.plusText, {backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2}]}>+3</Text>
                         }
                     </View>
                 )}
