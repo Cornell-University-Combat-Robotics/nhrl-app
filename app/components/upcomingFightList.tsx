@@ -28,7 +28,7 @@ function getRobotPhotoURL(name: string) {
 }
 
 //TODO: add supabse realtime, doesnt respond to db updates rn
-export default function UpcomingFightCard() {
+export default function UpcomingFightList() {
     const [fights, setFights] = useState<any[]>([]);
     const [photoUrls, setPhotoUrls] = useState<string[]>([]);
     const [renderList, setRenderList] = useState(false);
