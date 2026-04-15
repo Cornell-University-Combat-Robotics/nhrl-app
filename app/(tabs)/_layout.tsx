@@ -53,7 +53,7 @@ export default function TabLayout() {
 
 function SwipeNavBar() {
   const [curPage, setCurPage] = useState(0); //inital page = 0
-  const numPages = 4;
+  const numPages = 2;
 
   return (
     <>
@@ -75,15 +75,6 @@ function SwipeNavBar() {
             <View key="robots_all" style={{paddingHorizontal: 20}}>
               <RobotsAllScreen />
             </View>
-            <View key="about" style={{paddingHorizontal: 20}}>
-              <AboutScreen />
-            </View>
-            <View key="fights" style={{paddingHorizontal: 20}}>
-              <FightsPage />
-            </View>
-            <View key="index" style={{paddingHorizontal: 20}}>
-              <Index />
-            </View>
           </PagerView>
 
           <View style={styles.dotContainer}>
@@ -102,7 +93,7 @@ function SwipeNavBar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1, //fill up all space in parent
-    paddingVertical: 60
+    paddingVertical: 45
   },
   dotContainer: {
     position: 'absolute',
