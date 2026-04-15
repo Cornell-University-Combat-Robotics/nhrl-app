@@ -2,6 +2,7 @@ import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getRobotPhotoURL } from './helper-fxns';
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
@@ -15,16 +16,6 @@ async function getUpcomingFights() {
         log('info', 'Fetched fights 1');
         return data; //array of fights (allow for multiple)
     }
-}
-
-//TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
-function getRobotPhotoURL(name: string) {
-    const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-    const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
-    const baseUrlTail = "&thumb=1";
-    const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
-    console.log("Generated photo URL for " + name + ": " + url);
-    return url;
 }
 
 //TODO: add supabse realtime, doesnt respond to db updates rn

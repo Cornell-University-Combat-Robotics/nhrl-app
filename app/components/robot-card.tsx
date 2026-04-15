@@ -1,24 +1,24 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-export default function RobotCard({ photoUrl, fight, subteam, subteamColor }: { photoUrl: string, fight: any, subteam: string, subteamColor: string }) {
+export default function RobotCard({ robot, subteamColor }: { robot: any, subteamColor: string }) {
     return (
         <>
             <View style={styles.card}>
                 <View style={styles.cardRow}>
                     <Image
-                        source={{ uri: photoUrl }}
+                        source={{ uri: robot?.photoUrl }}
                         style={styles.photo}
                     />
                     <View style={styles.cardColumn}>
                         <Text style={styles.ourRobotText}>
-                            {fight?.robot_name}
+                            {robot?.robot_name}
                         </Text>
                         <View style={styles.labelContainer}>
-                            <SubteamLabel subteam={subteam} subteamColor={subteamColor} />
-                            {fight?.is_win === 'lose' && <EliminatedLabel />}
+                            <SubteamLabel subteam={robot?.subteam} subteamColor={subteamColor} />
+                            {robot?.is_eliminated === true && <EliminatedLabel />}
                         </View>
                         <Text style={styles.upcomingHeader}>
-                            Upcoming Opponent: {fight?.opponent_name}
+                            Upcoming Opponent: {robot?.opponent_name}
                         </Text>
                     </View>
                 </View>
@@ -41,7 +41,7 @@ function EliminatedLabel(){
     return (
         <>
             <View style={[styles.label, {backgroundColor: "#B6262650", borderColor: "#B6262650"}]}>
-                <Text style={styles.labelText}>Eliminated</Text>
+                <Text style={styles.labelText}>eliminated</Text>
             </View>
         </>
     );
@@ -53,9 +53,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
         height: 130,
-        zIndex: 2,
-        position: 'relative'
-        //manually flexDirection = column
+        marginBottom: 15
     },
     cardRow: {
         flexDirection: 'row',
@@ -94,7 +92,9 @@ const styles = StyleSheet.create({
         marginLeft: 20,
         width: 70,
         height: 70,
-        borderRadius: 100
+        borderRadius: 100,
+        borderColor: '#ffffff',
+        borderWidth: 0.5
     },
     labelContainer: {
         flexDirection: 'row',

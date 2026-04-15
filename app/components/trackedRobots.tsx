@@ -3,6 +3,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Checkbox, Portal } from "react-native-paper";
+import { getRobotPhotoURL } from "./helper-fxns";
 
 async function getRobots() {
     const { data, error } = await supabase
@@ -16,15 +17,6 @@ async function getRobots() {
         console.log('Fetched tracked robots:', data);
         return data;
     }
-}
-
-//TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
-function getRobotPhotoURL(name: string) {
-    const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-    const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
-    const baseUrlTail = "&thumb=1";
-    const url = baseUrlHead + encodeURIComponent(refinedName) + baseUrlTail;
-    return url;
 }
 
 export default function TrackedRobots() {
