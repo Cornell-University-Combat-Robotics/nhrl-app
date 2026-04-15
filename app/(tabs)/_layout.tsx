@@ -69,19 +69,19 @@ function SwipeNavBar() {
             initialPage={0}
             onPageSelected={(e) => setCurPage(e.nativeEvent.position)}
           >
-            <View key="home">
+            <View key="home" style={{paddingHorizontal: 20}}>
               <HomePage />
             </View>
-            <View key="robots_all">
+            <View key="robots_all" style={{paddingHorizontal: 20}}>
               <RobotsAllScreen />
             </View>
-            <View key="about">
+            <View key="about" style={{paddingHorizontal: 20}}>
               <AboutScreen />
             </View>
-            <View key="fights">
+            <View key="fights" style={{paddingHorizontal: 20}}>
               <FightsPage />
             </View>
-            <View key="index">
+            <View key="index" style={{paddingHorizontal: 20}}>
               <Index />
             </View>
           </PagerView>
@@ -102,8 +102,7 @@ function SwipeNavBar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1, //fill up all space in parent
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingVertical: 60
   },
   dotContainer: {
     position: 'absolute',
