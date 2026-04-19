@@ -26,9 +26,14 @@ import { Stack } from 'expo-router';
 
 export default function TabLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#000000" },
+      }}
+    >
       <Stack.Screen name="index" />
-      <Stack.Screen name="indiv-robot" />
+      <Stack.Screen name="indiv-robot" options={{ contentStyle: { backgroundColor: "#1E1E1E" } }} />
       <Stack.Screen name="about" />
       <Stack.Screen name="fights" />
     </Stack>

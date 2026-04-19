@@ -1,9 +1,10 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 
 export default function IndivRobotScreen() {
+    const router = useRouter();
     //cuz id passed in from router
     const { id } = useLocalSearchParams<{ id?: string }>();
     const robot_id = id ? Number(id) : null;
@@ -55,6 +56,12 @@ export default function IndivRobotScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
+            >
+                <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -64,7 +71,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#1E1E1E",
         ...StyleSheet.absoluteFillObject,
         paddingHorizontal: 30,
-        paddingVertical: 50
+        paddingBottom: 50,
+        paddingTop: 70
     },
     headerContainer: {
         flexDirection: "row",
@@ -114,5 +122,18 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderBottomWidth: 2
+    },
+    backButton: {
+        width: "100%",
+        borderRadius: 15,
+        backgroundColor: "#FFFFFF",
+        paddingVertical: 10,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    backButtonText: {
+        fontSize: 16,
+        color: "#000000",
+        fontWeight: "bold"
     }
 });
