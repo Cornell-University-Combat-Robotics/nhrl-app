@@ -1,8 +1,8 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 
 async function getUpcomingFights() {
@@ -15,76 +15,37 @@ async function getUpcomingFights() {
         return [];
     } else {
         log('info', 'Fetched fights 1');
-        return data; //array of fights (allow for multiple)
+        return data;
     }
 }
 
-//TODO: add supabse realtime, doesnt respond to db updates rn
-export default function UpcomingFightList() {
-    const [fights, setFights] = useState<any[]>([]);
-    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-    const [renderList, setRenderList] = useState(false);
-    const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
-    const opacityAnim = useRef(new Animated.Value(0)).current;
-    const [showListOpener, setShowListOpener] = useState(false);
-
-    const toggleList = useCallback(() => {
-        const opening = !renderList;
-
-        if (opening) {
-            // mount, and THEN animate in
-            setRenderList(true);
-            Animated.parallel([
-                Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 1, duration: 450, useNativeDriver: true })
-            ]).start();
-        } else {
-            // animate out, then set closed
-            Animated.parallel([
-                Animated.timing(slideAnim, { toValue: -10, duration: 300, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: true })
-            ]).start(() => {
-                setRenderList(false); // unmount after animation
-            });
-        }
-    }, [renderList]); //only rerender when mount & when renderList changes
+export default function HighlightedFightFunction() {
+    const [fight, setFight] = useState<any>(null);
 
     useEffect(() => {
         getUpcomingFights().then(f => {
-            setFights(f); //does NOT update state var immediately, React SCHEDULES a re-render for later
-            log('info', 'Fetched fights:');
-
-            //make lower case + remove all non-alphanumeric
-            f.map(fight => {
-                let url = getRobotPhotoURL(fight?.robot_name || "");
-                setPhotoUrls(prev => [...prev, url]);
-            });
+            const nextFight = f?.[0] ?? null;
+            setFight(nextFight);
         });
-    }, []); //only run once on component mount
+    }, []);
 
-    useEffect(() => {
-        let timer: ReturnType<typeof setTimeout>;
-
-        if (!renderList) {
-            //delay in showing listOpener after list closes
-            timer = setTimeout(() => {
-                setShowListOpener(true);
-            }, 100);
-        } else {
-            //hide immediately when list opens
-            setShowListOpener(false);
-        }
-
-        return () => clearTimeout(timer);
-    }, [renderList]);
+    const ourBotPhotoUrl = getRobotPhotoURL(fight?.robot_name || "");
+    const oppBotPhotoUrl = getRobotPhotoURL(fight?.opponent_name || "");
 
     return (
         <>
-        <HighlightedFightCard fight={fights?.[0]} photoUrl={photoUrls[0]} />
+        <HighlightedFightCard 
+            fight={fight} 
+            ourBotPhotoUrl={ourBotPhotoUrl} 
+            oppBotPhotoUrl={oppBotPhotoUrl} />
         </>
     );
 }
 
+/**
+ * isDelayed() checks if the upcoming fight has been delayed based on the current time and the scheduled fight time.
+ * @param timeStr - Scheduled fight time in 24-hour format
+ */
 const isDelayed = (timeStr: { split: (arg0: string) => [any, any]; }) => {
       if (!timeStr) return false;
 
@@ -98,9 +59,13 @@ const isDelayed = (timeStr: { split: (arg0: string) => [any, any]; }) => {
 
       const matchMinutes = toMinutes(timeStr);
 
-    return currMinutes > matchMinutes ? "DELAYED" : "ON TIME";
+    return currMinutes > matchMinutes ? true : false;
 };
 
+/**
+ * formatTime() is a helper function that formats the scheduled fight time from 24-hour format to 12-hour format with AM/PM.
+ * @param timeStr - Scheduled fight time in 24-hour format
+ */
 const formatTime = (timeStr: { split: (arg0: string) => [any, any]; }) => {
     if (!timeStr) return '';
 
@@ -114,59 +79,55 @@ const formatTime = (timeStr: { split: (arg0: string) => [any, any]; }) => {
     return `${h}:${minute} ${dayIndicate}`;
 };
 
-function HighlightedFightCard({ fight, photoUrl }: { fight: any, photoUrl: string }) {
+/**
+ *  HighlightedFightCard is a component that displays  details of the upcoming fight.
+ * @param fight - Contains details about the upcoming fight such as robot names, fight time, and cage number.
+ * @param ourBotPhotoUrl - URL of the photo for CRC robot
+ * @param oppBotPhotoUrl - URL of the photo for opponent robot
+ */
+function HighlightedFightCard({ fight, ourBotPhotoUrl, oppBotPhotoUrl }: { fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string }) {
     return (
         <View style={styles.card}>
-            <View style={styles.topRow}>
-                {/* TODO - add support for not delayed case */}
-                {isDelayed(fight?.fight_time) == "DELAYED" && ( 
-                <View style={styles.statusBanner}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialIcons name="access-time" size={18} color="white" />
-                        <Text style={styles.statusText}>{isDelayed(fight?.fight_time)}</Text>
+            {isDelayed(fight?.fight_time) && (
+                <View style={styles.topRow}>
+                    <View style={styles.statusBanner}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <MaterialIcons name="access-time" size={18} color="white" />
+                            <Text style={styles.statusText}>DELAYED</Text>
+                        </View>
                     </View>
                 </View>
-                )}
-            </View>
-
-
+            )}
 
             <View style={styles.bottomRow}>
-                {/* column 1 - our bot in fight */}
+                {/* Column 1 - Our Bot */}
                 <View style={styles.column}>
-                    <Image
-                        source={{ uri: photoUrl }}
-                        style={styles.photo}
+                    <Image 
+                        source={{ uri: ourBotPhotoUrl }} 
+                        style={styles.photo} 
                     />
                     <Text style={styles.robotText}>
                         {fight?.robot_name}
                     </Text>
                 </View>
 
-
-                {/* column 2 - time */}
+                {/* Column 2 - Time and Cage Location */}
                 <View style={styles.column}>
-                    <Text style={styles.timeText}>
-                        {formatTime(fight?.fight_time)}
-                    </Text>
-
-                    <Text style={styles.text}>
-                        Cage {fight?.cage}
-                    </Text>
-
+                    <Text style={styles.timeText}> {formatTime(fight?.fight_time)} </Text>
+                    <Text style={styles.text}>Cage {fight?.cage}</Text>
                 </View>
 
-                {/* column 3 - our opponent in fight */}
-                {/* TODO - get opponent photo URL */}
+                {/* Column 3 - Our Opponent */}
                 <View style={styles.column}>
                     <Image
-                        source={{ uri: photoUrl }}
+                        source={{ uri: oppBotPhotoUrl }}
                         style={styles.photo}
                     />
                     <Text style={styles.robotText}>
                         {fight?.opponent_name}
                     </Text>
                 </View>
+
             </View>
 
         </View>
@@ -181,12 +142,11 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         zIndex: 2,
         position: 'relative'
-        //manually flexDirection = column
     },
     topRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between', //space out the text and image to left & right
-        alignItems: 'center' //vertically center the text and image
+        justifyContent: 'space-between',
+        alignItems: 'center'
     },
     bottomRow: {
         flexDirection: 'row'
@@ -247,13 +207,4 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center'
     },
-    listOpener: {
-        backgroundColor: "#3A3A3A",
-        height: 165,
-        borderRadius: 15,
-        left: 20,
-        right: 20,
-        position: 'absolute',
-        zIndex: 1
-    }
 })
