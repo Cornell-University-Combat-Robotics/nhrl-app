@@ -22,7 +22,7 @@ export default function IndivRobotScreen() {
         <View style={styles.container}>
             <View>
                 <View style={styles.headerContainer}>
-                    <View>
+                    <View style={{ alignItems: "flex-start", gap: 5 }}>
                         <Text style={styles.robotTitle}>{robot?.robot_name}</Text>
                         <SubteamLabel subteam={robot?.subteam} subteamColor={subteamColor} />
                         {robot?.is_eliminated && <EliminatedLabel />}
@@ -54,27 +54,31 @@ export default function IndivRobotScreen() {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: "#1E1E1E",
-        ...StyleSheet.absoluteFillObject
+        ...StyleSheet.absoluteFillObject,
+        paddingHorizontal: 30,
+        paddingVertical: 50
     },
     headerContainer: {
         flexDirection: "row",
         alignContent: "center",
-        justifyContent: "center",
-        gap: 15
+        justifyContent: "space-between"
     },
     robotTitle: {
-        fontSize: 30,
+        fontSize: 25,
         fontWeight: "bold",
         color: "#FFFFFF",
-        fontFamily: "Josefin Sans",
+        marginBottom: 5
     },
     photo: {
-        width: 100,
-        height: 70,
-        borderRadius: 20
+        width: 150,
+        height: 100,
+        borderRadius: 20,
+        borderColor: "#FFFFFF",
+        borderWidth: 1,
     },
     infoContainer: {
         marginVertical: 20,
+        flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 10

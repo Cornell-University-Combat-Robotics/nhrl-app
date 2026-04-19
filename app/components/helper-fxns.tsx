@@ -1,5 +1,5 @@
 import { supabase } from "@/src/supabaseClient";
-import { Text, View, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export const subteamColors: Record<string, string> = {
     "sportsman": "#0B539450",
@@ -20,12 +20,12 @@ export function getRobotPhotoURL(name: string) {
 }
 
 export async function getRobots() {
-    const {data, error} = await supabase
+    const { data, error } = await supabase
         .from("robots")
-        .select("robot_id, robot_name, subteam, is_eliminated, upcoming_opponent, vintage, weapon, weight_class") 
-        //TODO: need to connect robot table to update upcoming opponent
+        .select("robot_id, robot_name, subteam, is_eliminated, upcoming_opponent, vintage, weapon, weight_class")
+    //TODO: need to connect robot table to update upcoming opponent
 
-    if(error || !data) {
+    if (error || !data) {
         console.error("Error fetching robots:", error);
         return [];
     } else {
@@ -35,13 +35,13 @@ export async function getRobots() {
 }
 
 export async function getRobotFromId(id: number) {
-    const {data, error} = await supabase
+    const { data, error } = await supabase
         .from("robots")
-        .select("robot_id, robot_name, subteam, is_eliminated, upcoming_opponent, vintage, weapon, weight_class") 
+        .select("robot_id, robot_name, subteam, is_eliminated, upcoming_opponent, vintage, weapon, weight_class")
         .eq("robot_id", id)
         .maybeSingle();
 
-    if(error || !data) {
+    if (error || !data) {
         console.error("Error fetching robot:", error);
         return null;
     } else {
@@ -50,23 +50,21 @@ export async function getRobotFromId(id: number) {
     }
 }
 
-export function SubteamLabel({subteam, subteamColor}:{subteam: string, subteamColor: string}){
+export function SubteamLabel({ subteam, subteamColor }: { subteam: string, subteamColor: string }) {
     return (
-        <>
-            <View style={[styles.label, {backgroundColor: subteamColor, borderColor: subteamColor}]}>
-                <Text style={styles.labelText}>{subteam}</Text>
-            </View>
-        </>
+        <View style={[styles.label, { backgroundColor: subteamColor, borderColor: subteamColor }]}>
+            <Text style={styles.labelText}>{subteam}</Text>
+        </View>
     );
 }
 
-export function EliminatedLabel(){
+export function EliminatedLabel() {
     return (
-        <>
-            <View style={[styles.label, {backgroundColor: "#B6262650", borderColor: "#B6262650"}]}>
-                <Text style={styles.labelText}>eliminated</Text>
-            </View>
-        </>
+
+        <View style={[styles.label, { backgroundColor: "#B6262650", borderColor: "#B6262650" }]}>
+            <Text style={styles.labelText}>eliminated</Text>
+        </View>
+
     );
 }
 
