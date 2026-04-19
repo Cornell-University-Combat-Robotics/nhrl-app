@@ -1,7 +1,9 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
+import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
+
 
 export default function HomePage() {
     return (
@@ -11,6 +13,9 @@ export default function HomePage() {
                 <TrackedRobots />
             </View>
             <View>
+                <Text style={styles.upcomingHeader}>HIGHLIGHTED FIGHT</Text>  {/* TODO delete this!!! */}
+                <HighlightedFight />
+
                 <Text style={styles.upcomingHeader}>UPCOMING</Text>
                 <UpcomingFightList />
             </View>
