@@ -8,7 +8,7 @@ export default function RobotCard({ robot, subteamColor }: { robot: any, subteam
     return (
         <>
             <TouchableOpacity style={styles.card}
-                onPress={() => router.push({ pathname: "/(tabs)/indiv-robot", params: { robot_id: robot.robot_id } })}
+                onPress={() => router.push({ pathname: "/(tabs)/indiv-robot", params: { id: robot.robot_id } })}
             >
                 <View style={styles.cardRow}>
                     <Image

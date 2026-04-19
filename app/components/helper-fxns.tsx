@@ -11,6 +11,7 @@ export const subteamColors: Record<string, string> = {
 
 //TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
 export function getRobotPhotoURL(name: string) {
+    if (!name) return null;
     const refinedName = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     const baseUrlHead = "https://brettzone.nhrl.io/brettZone/getBotPic.php?bot=";
     const baseUrlTail = "&thumb=1";

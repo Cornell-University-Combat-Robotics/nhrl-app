@@ -28,6 +28,7 @@ export default function RobotsAllScreen() {
                         <RobotCard
                             key={i}
                             robot={{
+                                robot_id: r.robot_id,
                                 photoUrl: getRobotPhotoURL(r.robot_name),
                                 robot_name: r.robot_name,
                                 opponent_name: r.upcoming_opponent,

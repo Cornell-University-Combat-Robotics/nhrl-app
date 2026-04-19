@@ -11,18 +11,19 @@ export default function IndivRobotScreen() {
     const [subteamColor, setSubteamColor] = useState<string>("");
 
     useEffect(() => {
+        if (robot_id == null) return; 
         getRobotFromId(robot_id!).then(r => {
             setRobot(r);
             setSubteamColor(subteamColors[r?.subteam]);
         });
-    });
+    },[robot_id]);
 
     return (
         <View style={styles.container}>
             <View>
                 <View style={styles.headerContainer}>
                     <View>
-                        <Text style={styles.robotTitle}>{robot.robot_name}</Text>
+                        <Text style={styles.robotTitle}>{robot?.robot_name}</Text>
                         <SubteamLabel subteam={robot?.subteam} subteamColor={subteamColor} />
                         {robot?.is_eliminated && <EliminatedLabel />}
                     </View>
