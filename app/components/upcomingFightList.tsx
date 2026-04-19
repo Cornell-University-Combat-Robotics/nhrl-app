@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#2C2C2C',
         height: 150,
         marginBottom: 10,
+        paddingHorizontal: 5,
         zIndex: 2,
         position: 'relative'
         //manually flexDirection = column

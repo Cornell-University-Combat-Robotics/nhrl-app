@@ -1,9 +1,15 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { EliminatedLabel, SubteamLabel } from './helper-fxns';
 
 export default function RobotCard({ robot, subteamColor }: { robot: any, subteamColor: string }) {
+    const router = useRouter();
+
     return (
         <>
-            <View style={styles.card}>
+            <TouchableOpacity style={styles.card}
+                onPress={() => router.push({ pathname: "/(tabs)/indiv-robot", params: { robot_id: robot.robot_id } })}
+            >
                 <View style={styles.cardRow}>
                     <Image
                         source={{ uri: robot?.photoUrl }}
@@ -22,31 +28,10 @@ export default function RobotCard({ robot, subteamColor }: { robot: any, subteam
                         </Text>
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         </>
     );
 }
-
-function SubteamLabel({subteam, subteamColor}:{subteam: string, subteamColor: string}){
-    return (
-        <>
-            <View style={[styles.label, {backgroundColor: subteamColor, borderColor: subteamColor}]}>
-                <Text style={styles.labelText}>{subteam}</Text>
-            </View>
-        </>
-    );
-}
-
-function EliminatedLabel(){
-    return (
-        <>
-            <View style={[styles.label, {backgroundColor: "#B6262650", borderColor: "#B6262650"}]}>
-                <Text style={styles.labelText}>eliminated</Text>
-            </View>
-        </>
-    );
-}
-
 
 const styles = StyleSheet.create({
     card: {
@@ -74,19 +59,8 @@ const styles = StyleSheet.create({
         color: '#ffffff'
     },
     upcomingHeader: {
-        color: "#A5A5A5", 
+        color: "#A5A5A5",
         fontSize: 16
-    },
-    label: {
-        paddingHorizontal: 10,
-        paddingVertical: 2,
-        borderRadius: 20,
-        borderWidth: 1.5,
-    },
-    labelText: {
-        color: "#FFFFFF",
-        fontSize: 15,
-        opacity: 1
     },
     photo: {
         marginLeft: 20,

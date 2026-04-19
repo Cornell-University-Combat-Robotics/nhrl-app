@@ -1,12 +1,9 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
-import AboutScreen from './about';
-import FightsPage from './fights';
 import HomePage from './home';
-import Index from './index';
 import RobotsAllScreen from './robots_all';
 
 /**
@@ -64,32 +61,31 @@ function SwipeNavBar() {
         locations={[0, 0.40]}  //black by 40% down
         style={styles.container}
       >
-          <PagerView
-            style={styles.container}
-            initialPage={0}
-            onPageSelected={(e) => setCurPage(e.nativeEvent.position)}
-          >
-            <View key="home" style={{paddingHorizontal: 20}}>
-              <HomePage />
-            </View>
-            <View key="robots_all" style={{paddingHorizontal: 20}}>
-              <RobotsAllScreen />
-            </View>
-          </PagerView>
-
-          <View style={styles.dotContainer}>
-            {[...Array(numPages)].map((_, idx) => {
-              return (
-                <View key={idx} style={[styles.dot, { backgroundColor: idx === curPage ? '#FFFFFF' : '#939393' }]}>
-                </View>
-              )
-            })}
+        <PagerView
+          style={styles.container}
+          initialPage={0}
+          onPageSelected={(e) => setCurPage(e.nativeEvent.position)}
+        >
+          <View key="home" style={{ paddingHorizontal: 20 }}>
+            <HomePage />
           </View>
+          <View key="robots_all" style={{ paddingHorizontal: 20 }}>
+            <RobotsAllScreen />
+          </View>
+        </PagerView>
+
+        <View style={styles.dotContainer}>
+          {[...Array(numPages)].map((_, idx) => {
+            return (
+              <View key={idx} style={[styles.dot, { backgroundColor: idx === curPage ? '#FFFFFF' : '#939393' }]}>
+              </View>
+            )
+          })}
+        </View>
       </LinearGradient>
     </>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1, //fill up all space in parent

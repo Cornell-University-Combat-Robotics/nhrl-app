@@ -24,7 +24,7 @@ export default function Index() {
     setRefreshing(true);
     setDebugInfo('Checking admin status...');
     console.log('Manual refresh triggered');
-    
+
     // Also try to query the profiles table directly to see what's happening
     const { supabase } = await import('@/src/supabaseClient');
     if (user) {
@@ -33,11 +33,11 @@ export default function Index() {
         .select('*')
         .eq('id', user.id)
         .single();
-      
+
       console.log('Direct profile query:', { data, error, userId: user.id });
       setDebugInfo(`Query result: ${error ? `Error: ${error.message}` : `Role: ${data?.role || 'not found'}`}`);
     }
-    
+
     await refreshAdminStatus();
     setRefreshing(false);
   };
@@ -46,7 +46,7 @@ export default function Index() {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to CRC's Competition App!</Text>
-        
+
         {session ? (
           <View style={styles.authSection}>
             <Text style={styles.text}>Logged in as: {user?.email}</Text>
@@ -87,7 +87,7 @@ export default function Index() {
 
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Database Stats</Text>
-          
+
           {robotsLoading || fightsLoading ? (
             <ActivityIndicator size="small" color="#fff" style={styles.loader} />
           ) : (
