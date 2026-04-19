@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 
 export default function IndivRobotScreen() {
@@ -9,6 +9,7 @@ export default function IndivRobotScreen() {
     const robot_id = id ? Number(id) : null;
     const [robot, setRobot] = useState<any>(null);
     const [subteamColor, setSubteamColor] = useState<string>("");
+    const [isUpcoming, setIsUpcoming] = useState<boolean>(true);
 
     useEffect(() => {
         if (robot_id == null) return; 
@@ -45,7 +46,14 @@ export default function IndivRobotScreen() {
                 </View>
             </View>
             <ScrollView>
-
+                <View style={styles.upcomingPastRow}>
+                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? {borderBottomColor: "#FFFFFF"} : {borderBottomColor: "#676767"}]} onPress={() => setIsUpcoming(true)}>
+                        <Text style={[{fontSize: 16}, isUpcoming ? {fontWeight: "bold", color: "#FFFFFF"} : {color: "#676767"}]}>Upcoming</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? {borderBottomColor: "#676767"}: {borderBottomColor: "#FFFFFF"}]} onPress={() => setIsUpcoming(false)}>
+                        <Text style={[{fontSize: 16}, isUpcoming ? {color: "#676767"} : {fontWeight: "bold", color: "#FFFFFF"}]}>Past</Text>
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
         </View>
     );
@@ -92,5 +100,19 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 16,
         color: "#FFFFFF"
+    },
+    upcomingPastRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 10,
+    },
+    upcomingPastButton: {
+        flex: 1,
+        paddingHorizontal: 50, //TODO this is hardcoded, bad
+        paddingVertical: 10,
+        justifyContent: "center",
+        alignItems: "center",
+        borderBottomWidth: 2
     }
 });
