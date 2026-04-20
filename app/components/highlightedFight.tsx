@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 
+// TODO - consider moving getUpcomingFights() to helper-fxns bc used in multiple files
 async function getUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
@@ -43,7 +44,7 @@ export default function HighlightedFightFunction() {
 }
 
 /**
- * isDelayed() checks if the upcoming fight has been delayed based on the current time and the scheduled fight time.
+ * isDelayed() returns if the upcoming fight has been delayed based on the current time and the scheduled fight time.
  * @param timeStr - Scheduled fight time in 24-hour format
  */
 const isDelayed = (timeStr: { split: (arg0: string) => [any, any]; }) => {
@@ -59,7 +60,7 @@ const isDelayed = (timeStr: { split: (arg0: string) => [any, any]; }) => {
 
       const matchMinutes = toMinutes(timeStr);
 
-    return currMinutes > matchMinutes ? true : false;
+    return true ? currMinutes > matchMinutes : false;
 };
 
 /**
@@ -85,25 +86,30 @@ const formatTime = (timeStr: { split: (arg0: string) => [any, any]; }) => {
  * @param ourBotPhotoUrl - URL of the photo for CRC robot
  * @param oppBotPhotoUrl - URL of the photo for opponent robot
  */
-function HighlightedFightCard({ fight, ourBotPhotoUrl, oppBotPhotoUrl }: { fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string }) {
+function HighlightedFightCard({fight, ourBotPhotoUrl, oppBotPhotoUrl}: {fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string}) {
     return (
+
         <View style={styles.card}>
+
+            {/* TOP ROW - If delayed, status banner will be displayed */}
             {isDelayed(fight?.fight_time) && (
                 <View style={styles.topRow}>
                     <View style={styles.statusBanner}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <MaterialIcons name="access-time" size={18} color="white" />
-                            <Text style={styles.statusText}>DELAYED</Text>
+                            <Text style={styles.statusText}>Delayed</Text>
                         </View>
                     </View>
                 </View>
             )}
-
+    
+            {/* BOTTOM ROW - Upcoming fight details */}
             <View style={styles.bottomRow}>
+
                 {/* Column 1 - Our Bot */}
                 <View style={styles.column}>
                     <Image 
-                        source={{ uri: ourBotPhotoUrl }} 
+                        source={{uri: ourBotPhotoUrl}} 
                         style={styles.photo} 
                     />
                     <Text style={styles.robotText}>
@@ -120,7 +126,7 @@ function HighlightedFightCard({ fight, ourBotPhotoUrl, oppBotPhotoUrl }: { fight
                 {/* Column 3 - Our Opponent */}
                 <View style={styles.column}>
                     <Image
-                        source={{ uri: oppBotPhotoUrl }}
+                        source={{uri: oppBotPhotoUrl}}
                         style={styles.photo}
                     />
                     <Text style={styles.robotText}>
@@ -138,32 +144,35 @@ const styles = StyleSheet.create({
     card: {
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
-        height: 220,
         marginBottom: 10,
         zIndex: 2,
-        position: 'relative'
+        position: 'relative',
+        paddingVertical: 20,
     },
     topRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 35,
     },
     bottomRow: {
-        flexDirection: 'row'
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
     },
     column: {
         flex: 1,
-        alignItems: 'center'        
+        alignItems: 'center',
+        justifyContent: 'center'      
     },
     statusBanner: {
         backgroundColor: "#4B4B4B",
         borderRadius: 5,
-        margin: 15,
         width: '92%',
-        height: 35, //of parent comp
+        height: 35,
         justifyContent: 'center',
         alignItems: 'center'
-
     },
     statusText: {
         fontSize: 16,
@@ -206,5 +215,5 @@ const styles = StyleSheet.create({
     ourRobot: {
         flexDirection: 'row',
         alignItems: 'center'
-    },
+    }
 })

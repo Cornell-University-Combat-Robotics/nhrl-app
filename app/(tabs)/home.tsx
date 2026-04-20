@@ -12,8 +12,8 @@ export default function HomePage() {
                 <Image source={crcSymbol} style={{ width: 50, height: 50 }} />
                 <TrackedRobots />
             </View>
+
             <View>
-                <Text style={styles.upcomingHeader}>HIGHLIGHTED FIGHT</Text>  {/* TODO delete this!!! */}
                 <HighlightedFight />
 
                 <Text style={styles.upcomingHeader}>UPCOMING</Text>
@@ -31,6 +31,9 @@ const styles = StyleSheet.create({
         marginBottom: 20
     },
     upcomingHeader: {
-        color: "#A5A5A5", fontSize: 16, marginBottom: 10
+        color: "#A5A5A5", 
+        fontSize: 14, 
+        marginTop: 35,
+        marginBottom: 10
     }
 });
