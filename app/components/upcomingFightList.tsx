@@ -94,7 +94,7 @@ export default function UpcomingFightList() {
                         {fights
                             .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
                             .map((fight, index) => (
-                                <IndivFightCard key={index} fight={fight} photoUrl={photoUrls[index + 1]} />
+                                <IndivFightCard key={index} props={{ title: `vs ${fight?.opponent_name}`, photoUrl: photoUrls[index + 1], fstText: `Opponent: ${fight?.opponent_name}`, sndText: `Live at: ${fight?.fight_time}`, innerBox: `Cage: ${fight?.cage}` }} />
                             ))}
                     </ScrollView>
                 </Animated.View>
