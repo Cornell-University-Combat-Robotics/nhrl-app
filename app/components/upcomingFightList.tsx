@@ -3,6 +3,7 @@ import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
+import IndivFightCard from './indiv-fight-card';
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
@@ -82,7 +83,7 @@ export default function UpcomingFightList() {
             <TouchableOpacity
                 onPress={() => { toggleList() }}
             >
-                <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]} />
+                <IndivFightCard props={{ title: fights?.[0]?.robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${fights?.[0]?.opponent_name}`, sndText: `Live at: ${fights?.[0]?.fight_time}`, innerBox: `Cage: ${fights?.[0]?.cage}` }} />
                 {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
@@ -99,37 +100,6 @@ export default function UpcomingFightList() {
                 </Animated.View>
             }
         </>
-    );
-}
-
-function IndivFightCard({ fight, photoUrl }: { fight: any, photoUrl: string }) {
-    return (
-        <View style={styles.card}>
-            <View style={styles.topRow}>
-                <View style={styles.ourRobot}>
-                    <Image
-                        source={{ uri: photoUrl }}
-                        style={styles.photo}
-                    />
-                    <Text style={styles.ourRobotText}>
-                        {fight?.robot_name}
-                    </Text>
-                </View>
-                <View style={styles.cage}>
-                    <Text style={styles.cageText}>{
-                        `Cage ${fight?.cage}`
-                    }</Text>
-                </View>
-            </View>
-            <View style={styles.bottomRow}>
-                <Text style={styles.text}>{
-                    `Opponent Name: ${fight?.opponent_name}`
-                }</Text>
-                <Text style={styles.text}>{
-                    `Live in: ${fight?.fight_time}`
-                }</Text>
-            </View>
-        </View>
     );
 }
 

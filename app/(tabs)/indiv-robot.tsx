@@ -1,7 +1,9 @@
+import { getFightsByRobotId } from "@/src/db/fights";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
+import IndivFightCard from "../components/indiv-fight-card";
 
 export default function IndivRobotScreen() {
     const router = useRouter();
@@ -11,14 +13,20 @@ export default function IndivRobotScreen() {
     const [robot, setRobot] = useState<any>(null);
     const [subteamColor, setSubteamColor] = useState<string>("");
     const [isUpcoming, setIsUpcoming] = useState<boolean>(true);
+    const [fights, setFights] = useState<any[]>([]);
+    const [photoUrl, setPhotoUrl] = useState<string | null>("");
 
     useEffect(() => {
-        if (robot_id == null) return; 
+        if (robot_id == null) return;
         getRobotFromId(robot_id!).then(r => {
             setRobot(r);
+            setPhotoUrl(getRobotPhotoURL(r?.robot_name));
             setSubteamColor(subteamColors[r?.subteam]);
         });
-    },[robot_id]);
+        getFightsByRobotId(robot_id!).then(f => {
+            setFights(f);
+        });
+    }, [robot_id]);
 
     return (
         <View style={styles.container}>
@@ -29,7 +37,7 @@ export default function IndivRobotScreen() {
                         <SubteamLabel subteam={robot?.subteam} subteamColor={subteamColor} />
                         {robot?.is_eliminated && <EliminatedLabel />}
                     </View>
-                    <Image source={{ uri: getRobotPhotoURL(robot?.robot_name) }} style={styles.photo} />
+                    <Image source={{ uri: photoUrl! }} style={styles.photo} />
                 </View>
                 <View style={styles.infoContainer}>
                     <View style={styles.infoCol}>
@@ -48,13 +56,18 @@ export default function IndivRobotScreen() {
             </View>
             <ScrollView>
                 <View style={styles.upcomingPastRow}>
-                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? {borderBottomColor: "#FFFFFF"} : {borderBottomColor: "#676767"}]} onPress={() => setIsUpcoming(true)}>
-                        <Text style={[{fontSize: 16}, isUpcoming ? {fontWeight: "bold", color: "#FFFFFF"} : {color: "#676767"}]}>Upcoming</Text>
+                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? { borderBottomColor: "#FFFFFF" } : { borderBottomColor: "#676767" }]} onPress={() => setIsUpcoming(true)}>
+                        <Text style={[{ fontSize: 16 }, isUpcoming ? { fontWeight: "bold", color: "#FFFFFF" } : { color: "#676767" }]}>Upcoming</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? {borderBottomColor: "#676767"}: {borderBottomColor: "#FFFFFF"}]} onPress={() => setIsUpcoming(false)}>
-                        <Text style={[{fontSize: 16}, isUpcoming ? {color: "#676767"} : {fontWeight: "bold", color: "#FFFFFF"}]}>Past</Text>
+                    <TouchableOpacity style={[styles.upcomingPastButton, isUpcoming ? { borderBottomColor: "#676767" } : { borderBottomColor: "#FFFFFF" }]} onPress={() => setIsUpcoming(false)}>
+                        <Text style={[{ fontSize: 16 }, isUpcoming ? { color: "#676767" } : { fontWeight: "bold", color: "#FFFFFF" }]}>Past</Text>
                     </TouchableOpacity>
                 </View>
+                {fights
+                    .filter(f => isUpcoming ? f?.is_win === null : f?.is_win !== null)
+                    .map((f, idx) =>
+                        <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, fstText: `Weapon: we dont have this info`, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? `Cage: ${f?.cage}` : f?.is_win === "win" ? `Win` : `Loss` }} />)
+                }
             </ScrollView>
             <TouchableOpacity
                 style={styles.backButton}
