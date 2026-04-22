@@ -20,10 +20,15 @@ async function getUpcomingFights() {
 }
 
 //TODO: add supabse realtime, doesnt respond to db updates rn
-export default function UpcomingFightList() {
-    const [fights, setFights] = useState<any[]>([]);
-    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+export default function UpcomingFightList({ checkedNames }: { checkedNames: string[] }) {
+    const [allFights, setAllFights] = useState<any[]>([]);
     const [renderList, setRenderList] = useState(false);
+
+    //derive filtered fights + photo urls on each render
+    const fights = checkedNames.length
+        ? allFights.filter(fight => checkedNames.includes(fight.robot_name))
+        : [];
+    const photoUrls = fights.map(fight => getRobotPhotoURL(fight?.robot_name || "") ?? "");
     const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const [showListOpener, setShowListOpener] = useState(false);
@@ -51,14 +56,8 @@ export default function UpcomingFightList() {
 
     useEffect(() => {
         getUpcomingFights().then(f => {
-            setFights(f); //does NOT update state var immediately, React SCHEDULES a re-render for later
+            setAllFights(f);
             log('info', 'Fetched fights:');
-
-            //make lower case + remove all non-alphanumeric
-            f.map(fight => {
-                let url = getRobotPhotoURL(fight?.robot_name || "");
-                setPhotoUrls(prev => [...prev, url]);
-            });
         });
     }, []); //only run once on component mount
 
@@ -78,12 +77,14 @@ export default function UpcomingFightList() {
         return () => clearTimeout(timer);
     }, [renderList]);
 
+    if (fights.length === 0) return null;
+
     return (
         <>
             <TouchableOpacity
                 onPress={() => { toggleList() }}
             >
-                <IndivFightCard props={{ title: fights?.[0]?.robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${fights?.[0]?.opponent_name}`, sndText: `Live at: ${fights?.[0]?.fight_time}`, innerBox: `Cage: ${fights?.[0]?.cage}` }} />
+                <IndivFightCard props={{ title: fights[0].robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${fights[0].opponent_name}`, sndText: `Live at: ${fights[0].fight_time}`, innerBox: `Cage: ${fights[0].cage}` }} />
                 {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
