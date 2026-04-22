@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 import IndivFightCard from "../components/indiv-fight-card";
+import { compareFightsByFightTimeAsc } from "../components/fights-section-helper";
 
 export default function IndivRobotScreen() {
     const router = useRouter();
@@ -65,6 +66,7 @@ export default function IndivRobotScreen() {
                 </View>
                 {fights
                     .filter(f => isUpcoming ? f?.is_win === null : f?.is_win !== null)
+                    .sort(compareFightsByFightTimeAsc)
                     .map((f, idx) =>
                         <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, fstText: `Weapon: we dont have this info`, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? `Cage: ${f?.cage}` : f?.is_win === "win" ? `Win` : `Loss` }} />)
                 }
