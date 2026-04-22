@@ -67,7 +67,12 @@ export default function RootLayout() {
     <PaperProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#000000" },
+            }}
+          >
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(admin)" />

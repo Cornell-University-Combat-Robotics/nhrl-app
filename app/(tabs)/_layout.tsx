@@ -1,114 +1,41 @@
-import { useAuth } from '@/src/contexts/AuthContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import PagerView from 'react-native-pager-view';
-import AboutScreen from './about';
-import FightsPage from './fights';
-import HomePage from './home';
-import Index from './index';
-import RobotsAllScreen from './robots_all';
+import { Stack } from 'expo-router';
 
-/**
- * Tab navigator layout for the main app.
- * Three tabs: Home, About, Fights. Dark theme with yellow active tint.
- * Header shows Login (unauthenticated) or Admin (admin users) button.
- */
+/*
+  2 different types of routing used in this app:
+
+  1) Pager (react-native-pager-view) — app/(tabs)/index.tsx
+     - Horizontal swipe between the top-level sections (Home, Robots, …).
+     - Pure UI state: the current page is a `useState` number, not a URL.
+     - No history stack, no deep linking, no back button behavior.
+     - Good for sibling views that the user should "glance between" quickly.
+
+  2) Expo Router Stack — this file (app/(tabs)/_layout.tsx)
+     - Declares routed screens (index, indiv-robot, fights, about, …).
+     - Each screen has its own URL, history entry, and navigation params.
+     - Used for drill-downs like tapping a RobotCard -> /indiv-robot?robot_id=…
+     - Supports back navigation, deep links, and passing params via the URL.
+
+  How they fit together:
+     - The Stack's `index` screen renders the PagerView (main swipe shell).
+     - Detail/secondary screens (e.g. indiv-robot) live as separate Stack
+       screens so we can navigate to them with router.push and read params
+       via useLocalSearchParams.
+     - Rule of thumb: use the pager for parallel "top-level" views, and
+       use the Stack for anything that needs a URL, params, or back stack.
+*/
+
 export default function TabLayout() {
-  const { session, isAdmin } = useAuth();
-
-  /*
-   
-         * Conditionally renders header-right button:
-         * Login if no session, Admin if user is admin, otherwise nothing.
-
-      headerRight: () => {
-        if (!session) {
-          return (
-            <TouchableOpacity
-              onPress={() => router.push('/(auth)/login')}
-              style={{ marginRight: 16 }}
-            >
-              <Text style={{ color: '#fff', fontSize: 16 }}>Login</Text>
-            </TouchableOpacity>
-          );
-        }
-        if (isAdmin) {
-          return (
-            <TouchableOpacity
-              onPress={() => router.push('/(admin)')}
-              style={{ marginRight: 16 }}
-            >
-              <Text style={{ color: '#fff', fontSize: 16 }}>Admin</Text>
-            </TouchableOpacity>
-          );
-        }
-  */
   return (
-    <>
-      <SwipeNavBar />
-    </>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#000000" },
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="indiv-robot" options={{ contentStyle: { backgroundColor: "#1E1E1E" } }} />
+      <Stack.Screen name="about" />
+      <Stack.Screen name="fights" />
+    </Stack>
   );
 }
-
-function SwipeNavBar() {
-  const [curPage, setCurPage] = useState(0); //inital page = 0
-  const numPages = 2;
-
-  return (
-    <>
-      <LinearGradient
-        colors={['#842D2D', '#000000']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        locations={[0, 0.40]}  //black by 40% down
-        style={styles.container}
-      >
-          <PagerView
-            style={styles.container}
-            initialPage={0}
-            onPageSelected={(e) => setCurPage(e.nativeEvent.position)}
-          >
-            <View key="home" style={{paddingHorizontal: 20}}>
-              <HomePage />
-            </View>
-            <View key="robots_all" style={{paddingHorizontal: 20}}>
-              <RobotsAllScreen />
-            </View>
-          </PagerView>
-
-          <View style={styles.dotContainer}>
-            {[...Array(numPages)].map((_, idx) => {
-              return (
-                <View key={idx} style={[styles.dot, { backgroundColor: idx === curPage ? '#FFFFFF' : '#939393' }]}>
-                </View>
-              )
-            })}
-          </View>
-      </LinearGradient>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, //fill up all space in parent
-    paddingVertical: 45
-  },
-  dotContainer: {
-    position: 'absolute',
-    bottom: 35,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignContent: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: 'transparent'
-  },
-  dot: {
-    borderRadius: 50,
-    width: 10,
-    height: 10
-  }
-});
