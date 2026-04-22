@@ -7,8 +7,8 @@ import { getRobotPhotoURL } from './helper-fxns';
 async function getUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
-        .select('fight_id, robot_name, opponent_name, cage, fight_time');
-
+        .select('fight_id, robot_name, opponent_name, cage, fight_time')
+        .order('fight_time', { ascending: true });
     if (error || !data) {
         console.error('Error fetching fights:', error);
         return [];
@@ -50,16 +50,17 @@ export default function UpcomingFightList() {
 
     useEffect(() => {
         getUpcomingFights().then(f => {
-            setFights(f); //does NOT update state var immediately, React SCHEDULES a re-render for later
             log('info', 'Fetched fights:');
 
-            //make lower case + remove all non-alphanumeric
-            f.map(fight => {
-                let url = getRobotPhotoURL(fight?.robot_name || "");
-                setPhotoUrls(prev => [...prev, url]);
-            });
+            setFights(f);
+
+            const urls = f.map(fight =>
+                getRobotPhotoURL(fight?.robot_name || "")
+            );
+
+            setPhotoUrls(urls);
         });
-    }, []); //only run once on component mount
+    }, []);
 
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout>;
@@ -77,24 +78,33 @@ export default function UpcomingFightList() {
         return () => clearTimeout(timer);
     }, [renderList]);
 
+    //account for the soonest fight already being in the highlighted fight section, so show fights from index 1 onward
+    const upcomingFights = fights?.slice(1) ?? [];
+    const upcomingPhotos = photoUrls?.slice(1) ?? [];
+
     return (
         <>
-            <TouchableOpacity
-                onPress={() => { toggleList() }}
-            >
-                <IndivFightCard fight={fights?.[0]} photoUrl={photoUrls[0]} />
+            <TouchableOpacity onPress={() => { toggleList() }}>
+                {/* show the second soonest fight as preview (if it exists) */}
+                <IndivFightCard 
+                    fight={upcomingFights[0]} 
+                    photoUrl={upcomingPhotos[0]} />
                 {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
             </TouchableOpacity>
+            
+            {/* show the remaining fights after toggle (if it exists) */}
             {renderList &&
                 <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
                     <ScrollView>
-                        {fights
-                            .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
-                            .map((fight, index) => (
-                                <IndivFightCard key={index} fight={fight} photoUrl={photoUrls[index + 1]} />
-                            ))}
+                    {upcomingFights.slice(1).map((fight, i) => (
+                        <IndivFightCard
+                            key={fight.fight_id ?? i}
+                            fight={fight}
+                            photoUrl={upcomingPhotos[i + 1]}
+                        />
+                    ))}                    
                     </ScrollView>
                 </Animated.View>
             }

@@ -9,14 +9,14 @@ import { getRobotPhotoURL } from './helper-fxns';
 async function getUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
-        .select('fight_id, robot_name, opponent_name, cage, fight_time');
-
+        .select('fight_id, robot_name, opponent_name, cage, fight_time')
+        .order('fight_time', { ascending: true });
     if (error || !data) {
         console.error('Error fetching fights:', error);
         return [];
     } else {
         log('info', 'Fetched fights 1');
-        return data;
+        return data; //array of fights (allow for multiple)
     }
 }
 
