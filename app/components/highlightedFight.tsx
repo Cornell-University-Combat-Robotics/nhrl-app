@@ -86,9 +86,8 @@ const formatTime = (timeStr: { split: (arg0: string) => [any, any]; }) => {
  * @param ourBotPhotoUrl - URL of the photo for CRC robot
  * @param oppBotPhotoUrl - URL of the photo for opponent robot
  */
-function HighlightedFightCard({fight, ourBotPhotoUrl, oppBotPhotoUrl}: {fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string}) {
+function HighlightedFightCard({fight, ourBotPhotoUrl, oppBotPhotoUrl}: {fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string;}) {
     return (
-
         <View style={styles.card}>
 
             {/* TOP ROW - If delayed, status banner will be displayed */}
@@ -137,6 +136,7 @@ function HighlightedFightCard({fight, ourBotPhotoUrl, oppBotPhotoUrl}: {fight: a
             </View>
 
         </View>
+
     );
 }
 

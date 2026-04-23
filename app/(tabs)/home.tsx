@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
@@ -15,6 +15,14 @@ export default function HomePage() {
 
             <View>
                 <HighlightedFight />
+
+                {/* Livestream Button */}
+                <TouchableOpacity
+                    style={styles.liveButton}
+                    onPress={() => Linking.openURL("https://brettzone.nhrl.io/brettZone/liveCompanion.php")}
+                >
+                    <Text style={styles.liveButtonText}>Watch Livestream ↗ </Text>
+                </TouchableOpacity>
 
                 <Text style={styles.upcomingHeader}>UPCOMING</Text>
                 <UpcomingFightList />
@@ -35,5 +43,17 @@ const styles = StyleSheet.create({
         fontSize: 14, 
         marginTop: 35,
         marginBottom: 10
+    },
+        liveButton: {
+        backgroundColor: "#B21C1C",
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: "center",
+        marginTop: 10
+    },
+    liveButtonText: {
+        color: "#FFFFFF",
+        fontWeight: "bold",
+        fontSize: 16
     }
 });
