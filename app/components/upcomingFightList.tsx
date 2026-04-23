@@ -1,8 +1,10 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
+
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 async function getUpcomingFights() {
     const { data, error } = await supabase
@@ -19,7 +21,7 @@ async function getUpcomingFights() {
 }
 
 //TODO: add supabse realtime, doesnt respond to db updates rn
-export default function UpcomingFightList() {
+export function UpcomingFightList1() {
     const [fights, setFights] = useState<any[]>([]);
     const [photoUrls, setPhotoUrls] = useState<string[]>([]);
     const [renderList, setRenderList] = useState(false);
@@ -112,6 +114,120 @@ export default function UpcomingFightList() {
     );
 }
 
+export default function UpcomingFightList() {
+    const [fights, setFights] = useState<any[]>([]);
+    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+    const [renderList, setRenderList] = useState(false);
+    const [showListOpener, setShowListOpener] = useState(false);
+
+    const slideAnim = useRef(new Animated.Value(-50)).current;
+    const opacityAnim = useRef(new Animated.Value(0)).current;
+
+    const toggleList = useCallback(() => {
+        const opening = !renderList;
+
+        if (opening) {
+            setRenderList(true);
+
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 450,
+                    useNativeDriver: true
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 450,
+                    useNativeDriver: true
+                })
+            ]).start();
+        } else {
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: -10,
+                    duration: 300,
+                    useNativeDriver: true
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true
+                })
+            ]).start(() => {
+                setRenderList(false);
+            });
+        }
+    }, [renderList]);
+
+    useEffect(() => {
+        getUpcomingFights().then(f => {
+            setFights(f);
+
+            const urls = f.map(fight =>
+                getRobotPhotoURL(fight?.robot_name || "")
+            );
+
+            setPhotoUrls(urls);
+        });
+    }, []);
+
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+
+        if (!renderList) {
+            timer = setTimeout(() => setShowListOpener(true), 100);
+        } else {
+            setShowListOpener(false);
+        }
+
+        return () => clearTimeout(timer);
+    }, [renderList]);
+
+    const upcomingFights = fights?.slice(1) ?? [];
+    const upcomingPhotos = photoUrls?.slice(1) ?? [];
+
+    return (
+        <View>
+            {/* Preview card */}
+            <TouchableOpacity activeOpacity={0.8} onPress={toggleList}>
+                <IndivFightCard
+                    fight={upcomingFights[0]}
+                    photoUrl={upcomingPhotos[0]}
+                />
+                {showListOpener && <View style={styles.listOpener} />}
+            </TouchableOpacity>
+
+            {/* Expandable list */}
+            {renderList && (
+                <Animated.View
+                    style={[
+                        styles.dropdown,
+                        {
+                            opacity: opacityAnim,
+                            transform: [{ translateY: slideAnim }]
+                        }
+                    ]}
+                >
+                    <FlatList
+                        data={upcomingFights.slice(1)}
+                        keyExtractor={(item, i) =>
+                            item.fight_id ?? i.toString()
+                        }
+                        renderItem={({ item, index }) => (
+                            <IndivFightCard
+                                fight={item}
+                                photoUrl={upcomingPhotos[index + 1]}
+                            />
+                        )}
+                        nestedScrollEnabled={true}
+                        showsVerticalScrollIndicator={false}
+                    />
+                </Animated.View>
+            )}
+        </View>
+    );
+}
+
 function IndivFightCard({ fight, photoUrl }: { fight: any, photoUrl: string }) {
     return (
         <View style={styles.card}>
@@ -144,6 +260,17 @@ function IndivFightCard({ fight, photoUrl }: { fight: any, photoUrl: string }) {
 }
 
 const styles = StyleSheet.create({
+    dropdown: {
+        maxHeight: SCREEN_HEIGHT * 0.5, // 🔥 THIS is what makes it scroll properly
+    },
+    listOpener: {
+        height: 10,
+        backgroundColor: "#333",
+        borderRadius: 5,
+        marginTop: 5,
+        alignSelf: "center",
+        width: 40
+    },
     card: {
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
@@ -200,14 +327,5 @@ const styles = StyleSheet.create({
     ourRobot: {
         flexDirection: 'row',
         alignItems: 'center'
-    },
-    listOpener: {
-        backgroundColor: "#3A3A3A",
-        height: 165,
-        borderRadius: 15,
-        left: 20,
-        right: 20,
-        position: 'absolute',
-        zIndex: 1
     }
 })
