@@ -1,3 +1,4 @@
+import { supabase } from "@/src/supabaseClient";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
@@ -5,14 +6,29 @@ import { getRobotPhotoURL, getRobots, subteamColors } from "../components/helper
 import RobotCard from "../components/robot-card";
 
 //TODO: might wanna move to to hooks
-
-
 export default function RobotsAllScreen() {
     const [robots, setRobots] = useState<any[]>([]);
 
     useEffect(() => {
+        // Initial fetch
         getRobots().then(r => setRobots(r));
-    }, []); //runs once on mount
+
+        // Real-time subscription
+        const channel = supabase
+            .channel('robots-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'robots' },
+                () => {
+                    getRobots().then(r => setRobots(r));
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     return (
         <>

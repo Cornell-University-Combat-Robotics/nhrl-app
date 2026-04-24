@@ -2,9 +2,9 @@ import { getFightsByRobotId } from "@/src/db/fights";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { compareFightsByFightTimeAsc } from "../components/fights-section-helper";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 import IndivFightCard from "../components/indiv-fight-card";
-import { compareFightsByFightTimeAsc } from "../components/fights-section-helper";
 
 export default function IndivRobotScreen() {
     const router = useRouter();
