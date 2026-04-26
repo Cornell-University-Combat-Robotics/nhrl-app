@@ -1,34 +1,17 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 import IndivFightCard from './indiv-fight-card';
 
-async function getUpcomingFights() {
-    const { data, error } = await supabase
-        .from('fights')
-        .select('fight_id, robot_name, opponent_name, cage, fight_time');
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 
-    if (error || !data) {
-        console.error('Error fetching fights:', error);
-        return [];
-    } else {
-        log('info', 'Fetched fights 1');
-        return data; //array of fights (allow for multiple)
-    }
-}
+export default function UpcomingFightList({upcomingFights, photoUrls}: {upcomingFights: any[], photoUrls: string[]}) {
+    if (upcomingFights.length === 0) return null;
 
-//TODO: add supabse realtime, doesnt respond to db updates rn
-export default function UpcomingFightList({ checkedNames }: { checkedNames: string[] }) {
-    const [allFights, setAllFights] = useState<any[]>([]);
     const [renderList, setRenderList] = useState(false);
 
-    //derive filtered fights + photo urls on each render
-    const fights = checkedNames.length
-        ? allFights.filter(fight => checkedNames.includes(fight.robot_name))
-        : [];
-    const photoUrls = fights.map(fight => getRobotPhotoURL(fight?.robot_name || "") ?? "");
     const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const [showListOpener, setShowListOpener] = useState(false);
@@ -37,74 +20,102 @@ export default function UpcomingFightList({ checkedNames }: { checkedNames: stri
         const opening = !renderList;
 
         if (opening) {
-            // mount, and THEN animate in
             setRenderList(true);
+
             Animated.parallel([
-                Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 1, duration: 450, useNativeDriver: true })
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 450,
+                    useNativeDriver: true
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 450,
+                    useNativeDriver: true
+                })
             ]).start();
         } else {
-            // animate out, then set closed
             Animated.parallel([
-                Animated.timing(slideAnim, { toValue: -10, duration: 300, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 0, duration: 300, useNativeDriver: true })
+                Animated.timing(slideAnim, {
+                    toValue: -10,
+                    duration: 300,
+                    useNativeDriver: true
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true
+                })
             ]).start(() => {
-                setRenderList(false); // unmount after animation
+                setRenderList(false);
             });
         }
-    }, [renderList]); //only rerender when mount & when renderList changes
-
-    useEffect(() => {
-        getUpcomingFights().then(f => {
-            setAllFights(f);
-            log('info', 'Fetched fights:');
-        });
-    }, []); //only run once on component mount
+    }, [renderList]);
 
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout>;
 
         if (!renderList) {
-            //delay in showing listOpener after list closes
-            timer = setTimeout(() => {
-                setShowListOpener(true);
-            }, 100);
+            timer = setTimeout(() => setShowListOpener(true), 100);
         } else {
-            //hide immediately when list opens
             setShowListOpener(false);
         }
 
         return () => clearTimeout(timer);
     }, [renderList]);
 
-    if (fights.length === 0) return null;
 
     return (
         <>
+            <Text style={styles.upcomingHeader}>UPCOMING FIGHTS</Text>
             <TouchableOpacity
                 onPress={() => { toggleList() }}
+                activeOpacity={0.8}
             >
-                <IndivFightCard props={{ title: fights[0].robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${fights[0].opponent_name}`, sndText: `Live at: ${fights[0].fight_time}`, innerBox: `Cage: ${fights[0].cage}` }} />
+                <IndivFightCard props={{ title: upcomingFights?.[0]?.robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${upcomingFights?.[0]?.opponent_name}`, sndText: `Live at: ${upcomingFights?.[0]?.fight_time}`, innerBox: `Cage: ${upcomingFights?.[0]?.cage}` }} />
                 {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
             </TouchableOpacity>
-            {renderList &&
-                <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
+            {renderList && (
+                <Animated.View
+                    style={{
+                        opacity: opacityAnim,
+                        transform: [{ translateY: slideAnim }],
+                        paddingBottom: 80
+                    }}
+                >
                     <ScrollView>
-                        {fights
-                            .filter((_, index) => index !== 0) //exclude first fight since it's already rendered above
-                            .map((fight, index) => (
-                                <IndivFightCard key={index} props={{ title: `vs ${fight?.opponent_name}`, photoUrl: photoUrls[index + 1], fstText: `Opponent: ${fight?.opponent_name}`, sndText: `Live at: ${fight?.fight_time}`, innerBox: `Cage: ${fight?.cage}` }} />
-                            ))}
+                        {upcomingFights.slice(1).map((item, index) => (
+                            <IndivFightCard key={index} props={{ title: item?.robot_name, photoUrl: photoUrls[index + 1], fstText: `Opponent: ${item?.opponent_name}`, sndText: `Live at: ${item?.fight_time}`, innerBox: `Cage: ${item?.cage}` }} />
+                        ))}
                     </ScrollView>
                 </Animated.View>
-            }
+            )}
         </>
     );
+
 }
 
 const styles = StyleSheet.create({
+    upcomingHeader: {
+        color: "#A5A5A5", 
+        fontSize: 14, 
+        marginTop: 35,
+        marginBottom: 10
+    },
+    dropdown: {
+        maxHeight: SCREEN_HEIGHT * 0.5,
+        overflow: 'hidden',   // clips content cleanly
+    },
+    listOpener: {
+        height: 10,
+        backgroundColor: "#333",
+        borderRadius: 5,
+        marginTop: 5,
+        alignSelf: "center",
+        width: 40
+    },
     card: {
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
@@ -162,14 +173,5 @@ const styles = StyleSheet.create({
     ourRobot: {
         flexDirection: 'row',
         alignItems: 'center'
-    },
-    listOpener: {
-        backgroundColor: "#3A3A3A",
-        height: 165,
-        borderRadius: 15,
-        left: 20,
-        right: 20,
-        position: 'absolute',
-        zIndex: 1
     }
 })

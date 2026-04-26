@@ -47,6 +47,7 @@ export default function AdminLayout() {
       <Stack.Screen name="builder-form" options={{ title: 'Add/Edit Builder' }} />
       <Stack.Screen name="fight-form" options={{ title: 'Add/Edit Fight' }} />
       <Stack.Screen name="subteam-form" options={{ title: 'Add/Edit Subteam' }} />
+      <Stack.Screen name="livestream-links" options={{ title: 'Add Livestream Links' }} />
     </Stack>
   );
 }

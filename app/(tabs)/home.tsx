@@ -1,12 +1,21 @@
-import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
+import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
+import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 
 export default function HomePage() {
     const [checked, setChecked] = useState<Record<number, boolean>>({});
     const [robots, setRobots] = useState<any[]>([]);
+    const [fights, setFights] = useState<any[]>([]);
+
+    useEffect(() => {
+        getUpcomingFights().then(f => {
+            setFights(f);
+        });
+    }, []);
 
     const toggleChecked = (id: number) => {
         setChecked(prev => ({
@@ -18,9 +27,17 @@ export default function HomePage() {
     const checkedNames = robots
         .map((r, i) => (checked[i] ? r.robot_name : null))
         .filter(Boolean) as string[];
+    
+
+    //derive filtered fights + photo urls on each render
+    const filteredFights = checkedNames.length
+        ? fights.filter(fight => checkedNames.includes(fight.robot_name))
+        : fights;
+    const photoUrls = filteredFights.map(fight => getRobotPhotoURL(fight?.robot_name || "") ?? "");
+
 
     return (
-        <>
+        <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.topNav}>
                 <Image source={crcSymbol} style={{ width: 50, height: 50 }} />
                 <TrackedRobots
@@ -31,22 +48,22 @@ export default function HomePage() {
                     setRobots={setRobots}
                 />
             </View>
-            <View>
-                <Text style={styles.upcomingHeader}>UPCOMING</Text>
-                <UpcomingFightList checkedNames={checkedNames} />
-            </View>
-        </>
+
+            <HighlightedFight fight={filteredFights?.[0] ?? null} />
+
+            <UpcomingFightList upcomingFights={filteredFights?.slice(1) ?? []} photoUrls={photoUrls?.slice(1) ?? []} />
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        paddingBottom: 0
+    },
     topNav: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 20
     },
-    upcomingHeader: {
-        color: "#A5A5A5", fontSize: 16, marginBottom: 10
-    }
 });
