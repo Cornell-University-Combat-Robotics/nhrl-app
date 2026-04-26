@@ -5,11 +5,14 @@ import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
 import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { router } from "expo-router";
 
 export default function HomePage() {
     const [checked, setChecked] = useState<Record<number, boolean>>({});
     const [robots, setRobots] = useState<any[]>([]);
     const [fights, setFights] = useState<any[]>([]);
+    const { isAdmin } = useAuth();
 
     useEffect(() => {
         getUpcomingFights().then(f => {
@@ -49,6 +52,15 @@ export default function HomePage() {
                 />
             </View>
 
+            {isAdmin && (
+                <TouchableOpacity
+                    style={styles.adminButton}
+                    onPress={() => router.push('/(admin)')}
+                >
+                    <Text style={styles.adminButtonText}>Go to Admin Dashboard</Text>
+                </TouchableOpacity>
+            )}
+
             <HighlightedFight fight={filteredFights?.[0] ?? null} />
 
             <UpcomingFightList upcomingFights={filteredFights?.slice(1) ?? []} photoUrls={photoUrls?.slice(1) ?? []} />
@@ -65,5 +77,18 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 20
+    },
+    adminButton: {
+        backgroundColor: "#8C2F39",
+        borderRadius: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        marginBottom: 20,
+        alignItems: "center",
+    },
+    adminButtonText: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "600",
     },
 });
