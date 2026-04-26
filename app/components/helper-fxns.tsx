@@ -9,6 +9,20 @@ export const subteamColors: Record<string, string> = {
     "infinity": "0C8CA250"
 }
 
+export async function getUpcomingFights() {
+    const { data, error } = await supabase
+        .from('fights')
+        .select('fight_id, robot_name, opponent_name, cage, fight_time')
+        .order('fight_time', { ascending: true });
+    if (error || !data) {
+        console.error('Error fetching fights:', error);
+        return [];
+    } else {
+        console.log('info', 'Fetched fights 1');
+        return data; //array of fights (allow for multiple)
+    }
+}
+
 //TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
 export function getRobotPhotoURL(name: string) {
     if (!name) return null;

@@ -1,44 +1,24 @@
-import { supabase } from '@/src/supabaseClient';
-import { log } from '@/src/utils/log';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 
-// TODO - consider moving getUpcomingFights() to helper-fxns bc used in multiple files
-async function getUpcomingFights() {
-    const { data, error } = await supabase
-        .from('fights')
-        .select('fight_id, robot_name, opponent_name, cage, fight_time')
-        .order('fight_time', { ascending: true });
-    if (error || !data) {
-        console.error('Error fetching fights:', error);
-        return [];
-    } else {
-        log('info', 'Fetched fights 1');
-        return data; //array of fights (allow for multiple)
-    }
-}
+export default function HighlightedFight({ fight }: { fight: any }) {
 
-export default function HighlightedFightFunction() {
-    const [fight, setFight] = useState<any>(null);
-
-    useEffect(() => {
-        getUpcomingFights().then(f => {
-            const nextFight = f?.[0] ?? null;
-            setFight(nextFight);
-        });
-    }, []);
+    if (!fight) return (
+        <View style={{alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+            <Text style={{fontSize: 20, color: '#ffffff', textAlign: 'center', fontStyle: 'italic'}}>Please track some robots to see upcoming fights</Text>
+        </View>
+    );
 
     const ourBotPhotoUrl = getRobotPhotoURL(fight?.robot_name || "");
     const oppBotPhotoUrl = getRobotPhotoURL(fight?.opponent_name || "");
 
     return (
         <>
-        <HighlightedFightCard 
-            fight={fight} 
-            ourBotPhotoUrl={ourBotPhotoUrl} 
-            oppBotPhotoUrl={oppBotPhotoUrl} />
+            <HighlightedFightCard
+                fight={fight}
+                ourBotPhotoUrl={ourBotPhotoUrl ?? ""}
+                oppBotPhotoUrl={oppBotPhotoUrl ?? ""} />
         </>
     );
 }
@@ -48,17 +28,17 @@ export default function HighlightedFightFunction() {
  * @param timeStr - Scheduled fight time in 24-hour format
  */
 const isDelayed = (timeStr: { split: (arg0: string) => [any, any]; }) => {
-      if (!timeStr) return false;
+    if (!timeStr) return false;
 
-      const toMinutes = (t: { split: any; }) => {
+    const toMinutes = (t: { split: any; }) => {
         const [h, m] = t.split(':');
         return parseInt(h) * 60 + parseInt(m);
-      }
+    }
 
-      const now = new Date();
-      const currMinutes = now.getHours() * 60 + now.getMinutes();
+    const now = new Date();
+    const currMinutes = now.getHours() * 60 + now.getMinutes();
 
-      const matchMinutes = toMinutes(timeStr);
+    const matchMinutes = toMinutes(timeStr);
 
     return true ? currMinutes > matchMinutes : false;
 };
@@ -86,56 +66,65 @@ const formatTime = (timeStr: { split: (arg0: string) => [any, any]; }) => {
  * @param ourBotPhotoUrl - URL of the photo for CRC robot
  * @param oppBotPhotoUrl - URL of the photo for opponent robot
  */
-function HighlightedFightCard({fight, ourBotPhotoUrl, oppBotPhotoUrl}: {fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string;}) {
+function HighlightedFightCard({ fight, ourBotPhotoUrl, oppBotPhotoUrl }: { fight: any, ourBotPhotoUrl: string, oppBotPhotoUrl: string; }) {
     return (
-        <View style={styles.card}>
+        <>
+            <View style={styles.card}>
 
-            {/* TOP ROW - If delayed, status banner will be displayed */}
-            {isDelayed(fight?.fight_time) && (
-                <View style={styles.topRow}>
-                    <View style={styles.statusBanner}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <MaterialIcons name="access-time" size={18} color="white" />
-                            <Text style={styles.statusText}>Delayed</Text>
+                {/* TOP ROW - If delayed, status banner will be displayed */}
+                {isDelayed(fight?.fight_time) && (
+                    <View style={styles.topRow}>
+                        <View style={styles.statusBanner}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialIcons name="access-time" size={18} color="white" />
+                                <Text style={styles.statusText}>Delayed</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
-            )}
-    
-            {/* BOTTOM ROW - Upcoming fight details */}
-            <View style={styles.bottomRow}>
+                )}
 
-                {/* Column 1 - Our Bot */}
-                <View style={styles.column}>
-                    <Image 
-                        source={{uri: ourBotPhotoUrl}} 
-                        style={styles.photo} 
-                    />
-                    <Text style={styles.robotText}>
-                        {fight?.robot_name}
-                    </Text>
-                </View>
+                {/* BOTTOM ROW - Upcoming fight details */}
+                <View style={styles.bottomRow}>
 
-                {/* Column 2 - Time and Cage Location */}
-                <View style={styles.column}>
-                    <Text style={styles.timeText}> {formatTime(fight?.fight_time)} </Text>
-                    <Text style={styles.text}>Cage {fight?.cage}</Text>
-                </View>
+                    {/* Column 1 - Our Bot */}
+                    <View style={styles.column}>
+                        <Image
+                            source={{ uri: ourBotPhotoUrl }}
+                            style={styles.photo}
+                        />
+                        <Text style={styles.robotText}>
+                            {fight?.robot_name}
+                        </Text>
+                    </View>
 
-                {/* Column 3 - Our Opponent */}
-                <View style={styles.column}>
-                    <Image
-                        source={{uri: oppBotPhotoUrl}}
-                        style={styles.photo}
-                    />
-                    <Text style={styles.robotText}>
-                        {fight?.opponent_name}
-                    </Text>
+                    {/* Column 2 - Time and Cage Location */}
+                    <View style={styles.column}>
+                        <Text style={styles.timeText}> {formatTime(fight?.fight_time)} </Text>
+                        <Text style={styles.text}>Cage {fight?.cage}</Text>
+                    </View>
+
+                    {/* Column 3 - Our Opponent */}
+                    <View style={styles.column}>
+                        <Image
+                            source={{ uri: oppBotPhotoUrl }}
+                            style={styles.photo}
+                        />
+                        <Text style={styles.robotText}>
+                            {fight?.opponent_name}
+                        </Text>
+                    </View>
+
                 </View>
 
             </View>
 
-        </View>
+            <TouchableOpacity
+                style={styles.liveButton}
+                onPress={() => Linking.openURL("https://brettzone.nhrl.io/brettZone/liveCompanion.php")}
+            >
+                <Text style={styles.liveButtonText}>Watch Livestream ↗ </Text>
+            </TouchableOpacity>
+        </>
 
     );
 }
@@ -160,11 +149,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 10,
+        paddingHorizontal: 10,
+        gap: 5,
     },
     column: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'center'      
+        justifyContent: 'center'
     },
     statusBanner: {
         backgroundColor: "#4B4B4B",
@@ -178,7 +169,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: 'center',
         fontWeight: 'bold',
-        marginLeft: 10,
         color: '#ffffff'
     },
     robotText: {
@@ -186,15 +176,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: 'bold',
         marginTop: 10,
-        marginLeft: 10,
         color: '#ffffff'
     },
     timeText: {
-        fontSize: 30,
+        fontSize: 25,
         textAlign: 'center',
         fontWeight: 'bold',
-        marginTop: 40,
-        marginLeft: 10,
         color: '#ffffff'
     },
     text: {
@@ -205,15 +192,26 @@ const styles = StyleSheet.create({
         marginBottom: 10
     },
     photo: {
-        marginLeft: 10,
         width: 80,
         height: 80,
         borderRadius: 100,
         borderColor: '#ffffff',
-        borderWidth: 0
+        borderWidth: 0.5
     },
     ourRobot: {
         flexDirection: 'row',
         alignItems: 'center'
+    },
+    liveButton: {
+        backgroundColor: "#B21C1C",
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: "center",
+        marginTop: 10
+    },
+    liveButtonText: {
+        color: "#FFFFFF",
+        fontWeight: "bold",
+        fontSize: 16
     }
 })

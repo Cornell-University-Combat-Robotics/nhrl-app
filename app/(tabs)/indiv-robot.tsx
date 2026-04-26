@@ -29,6 +29,10 @@ export default function IndivRobotScreen() {
         });
     }, [robot_id]);
 
+    const visibleFights = fights
+        .filter(f => isUpcoming ? f?.is_win === null : f?.is_win !== null)
+        .sort(compareFightsByFightTimeAsc);
+
     return (
         <View style={styles.container}>
             <View>
@@ -64,12 +68,12 @@ export default function IndivRobotScreen() {
                         <Text style={[{ fontSize: 16 }, isUpcoming ? { color: "#676767" } : { fontWeight: "bold", color: "#FFFFFF" }]}>Past</Text>
                     </TouchableOpacity>
                 </View>
-                {fights
-                    .filter(f => isUpcoming ? f?.is_win === null : f?.is_win !== null)
-                    .sort(compareFightsByFightTimeAsc)
-                    .map((f, idx) =>
+                {visibleFights.length === 0 ? (
+                    <Text style={styles.noFightsText}>no fights currently</Text>
+                ) : (
+                    visibleFights.map((f, idx) =>
                         <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, fstText: `Weapon: we dont have this info`, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? `Cage: ${f?.cage}` : f?.is_win === "win" ? `Win` : `Loss` }} />)
-                }
+                )}
             </ScrollView>
             <TouchableOpacity
                 style={styles.backButton}
@@ -137,6 +141,12 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderBottomWidth: 2
+    },
+    noFightsText: {
+        color: "#A5A5A5",
+        textAlign: "center",
+        fontSize: 16,
+        marginTop: 16
     },
     backButton: {
         width: "100%",

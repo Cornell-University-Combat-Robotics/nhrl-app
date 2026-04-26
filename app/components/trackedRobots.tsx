@@ -19,22 +19,26 @@ async function getRobots() {
     }
 }
 
-export default function TrackedRobots() {
+export default function TrackedRobots({
+    checked,
+    setChecked,
+    toggleChecked,
+    robots,
+    setRobots,
+}: {
+    checked: Record<number, boolean>,
+    toggleChecked: (id: number) => void,
+    setChecked: React.Dispatch<React.SetStateAction<Record<number, boolean>>>,
+    robots: any[],
+    setRobots: React.Dispatch<React.SetStateAction<any[]>>,
+}) {
     const [isVisible, setVisibility] = useState(false);
-    const [robots, setRobots] = useState<any[]>([]); //note: if you don't use a state here, react will not trigger a re-render when u populate the array
     const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-    const [checked, setChecked] = useState<Record<number, boolean>>({});
 
     const onClose = () => {
         setVisibility(false);
     }
 
-    const toggleChecked = (id: number) => {
-        setChecked(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }))
-    }
 
     const countChecked = () => {
         return Object.values(checked).filter(value => value == true).length;
@@ -45,7 +49,7 @@ export default function TrackedRobots() {
             setRobots(r);
             r.map((r, i) => {
                 let url = getRobotPhotoURL(r.robot_name);
-                setPhotoUrls(prev => [...prev, url]);
+                setPhotoUrls(prev => [...prev, url!]);
                 setChecked(prev => ({
                     ...prev,
                     [i]: false
@@ -72,7 +76,7 @@ function TrackedButton({
     checked,
     numChecked,
     photoUrls
-}:{ 
+}: {
     setVisibility: React.Dispatch<React.SetStateAction<boolean>>,
     robots: any[],
     checked: Record<number, boolean>,
@@ -82,7 +86,7 @@ function TrackedButton({
     //to track number of photos in button, and to help render the "+2" when >2 robots selected
     const overTwo = numChecked > 2;
     const allChecked = robots.map((_, i) => i).filter(i => checked[i]);
-    const renderedRobotIdxs = overTwo ? allChecked.slice(0,2) : allChecked;
+    const renderedRobotIdxs = overTwo ? allChecked.slice(0, 2) : allChecked;
 
     return (
         <>
@@ -98,12 +102,12 @@ function TrackedButton({
                     <AntDesign name="plus" size={20} color="#000000" style={{ marginLeft: 5 }} />
                 ) : (
                     <View style={styles.plusPhotoContainer}>
-                        {renderedRobotIdxs.map((i, _) => 
+                        {renderedRobotIdxs.map((i, _) =>
                             checked[i] &&
                             <Image key={i} source={{ uri: photoUrls[i] }} style={styles.plusPhoto} />
                         )}
-                        {overTwo && 
-                        <Text style={[styles.plusPhoto, styles.plusText, {backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2}]}>+3</Text>
+                        {overTwo &&
+                            <Text style={[styles.plusPhoto, styles.plusText, { backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2 }]}>+3</Text>
                         }
                     </View>
                 )}
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center'
     },
-    plusText:{
+    plusText: {
         color: '#FFFFFF',
         fontSize: 10,
         fontWeight: 'bold'

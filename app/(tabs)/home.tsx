@@ -1,28 +1,57 @@
+import { useEffect, useState } from "react";
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
+import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 
 export default function HomePage() {
+    const [checked, setChecked] = useState<Record<number, boolean>>({});
+    const [robots, setRobots] = useState<any[]>([]);
+    const [fights, setFights] = useState<any[]>([]);
+
+    useEffect(() => {
+        getUpcomingFights().then(f => {
+            setFights(f);
+        });
+    }, []);
+
+    const toggleChecked = (id: number) => {
+        setChecked(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }))
+    }
+
+    const checkedNames = robots
+        .map((r, i) => (checked[i] ? r.robot_name : null))
+        .filter(Boolean) as string[];
+    
+
+    //derive filtered fights + photo urls on each render
+    const filteredFights = checkedNames.length
+        ? fights.filter(fight => checkedNames.includes(fight.robot_name))
+        : fights;
+    const photoUrls = filteredFights.map(fight => getRobotPhotoURL(fight?.robot_name || "") ?? "");
+
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.topNav}>
                 <Image source={crcSymbol} style={{ width: 50, height: 50 }} />
-                <TrackedRobots />
+                <TrackedRobots
+                    checked={checked}
+                    setChecked={setChecked}
+                    toggleChecked={toggleChecked}
+                    robots={robots}
+                    setRobots={setRobots}
+                />
             </View>
 
-            <HighlightedFight />
+            <HighlightedFight fight={filteredFights?.[0] ?? null} />
 
-            <TouchableOpacity
-                style={styles.liveButton}
-                onPress={() => Linking.openURL("https://brettzone.nhrl.io/brettZone/liveCompanion.php")}
-            >
-                <Text style={styles.liveButtonText}>Watch Livestream ↗ </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.upcomingHeader}>UPCOMING</Text>
-            <UpcomingFightList />
+            <UpcomingFightList upcomingFights={filteredFights?.slice(1) ?? []} photoUrls={photoUrls?.slice(1) ?? []} />
         </ScrollView>
     );
 }
@@ -37,22 +66,4 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 20
     },
-    upcomingHeader: {
-        color: "#A5A5A5", 
-        fontSize: 14, 
-        marginTop: 35,
-        marginBottom: 10
-    },
-        liveButton: {
-        backgroundColor: "#B21C1C",
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: "center",
-        marginTop: 10
-    },
-    liveButtonText: {
-        color: "#FFFFFF",
-        fontWeight: "bold",
-        fontSize: 16
-    }
 });

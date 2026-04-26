@@ -7,28 +7,14 @@ import IndivFightCard from './indiv-fight-card';
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
-async function getUpcomingFights() {
-    const { data, error } = await supabase
-        .from('fights')
-        .select('fight_id, robot_name, opponent_name, cage, fight_time')
-        .order('fight_time', { ascending: true });
-    if (error || !data) {
-        console.error('Error fetching fights:', error);
-        return [];
-    } else {
-        log('info', 'Fetched fights 1');
-        return data; //array of fights (allow for multiple)
-    }
-}
+export default function UpcomingFightList({upcomingFights, photoUrls}: {upcomingFights: any[], photoUrls: string[]}) {
+    if (upcomingFights.length === 0) return null;
 
-export default function UpcomingFightList() {
-    const [fights, setFights] = useState<any[]>([]);
-    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
     const [renderList, setRenderList] = useState(false);
-    const [showListOpener, setShowListOpener] = useState(false);
 
-    const slideAnim = useRef(new Animated.Value(-50)).current;
+    const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const [showListOpener, setShowListOpener] = useState(false);
 
     const toggleList = useCallback(() => {
         const opening = !renderList;
@@ -67,18 +53,6 @@ export default function UpcomingFightList() {
     }, [renderList]);
 
     useEffect(() => {
-        getUpcomingFights().then(f => {
-            setFights(f);
-
-            const urls = f.map(fight =>
-                getRobotPhotoURL(fight?.robot_name || "")
-            );
-
-            setPhotoUrls(urls);
-        });
-    }, []);
-
-    useEffect(() => {
         let timer: ReturnType<typeof setTimeout>;
 
         if (!renderList) {
@@ -90,16 +64,15 @@ export default function UpcomingFightList() {
         return () => clearTimeout(timer);
     }, [renderList]);
 
-    const upcomingFights = fights?.slice(1) ?? [];
-    const upcomingPhotos = photoUrls?.slice(1) ?? [];
 
     return (
         <>
+            <Text style={styles.upcomingHeader}>UPCOMING FIGHTS</Text>
             <TouchableOpacity
                 onPress={() => { toggleList() }}
                 activeOpacity={0.8}
             >
-                <IndivFightCard props={{ title: fights?.[0]?.robot_name, photoUrl: upcomingPhotos[0], fstText: `Opponent: ${fights?.[0]?.opponent_name}`, sndText: `Live at: ${fights?.[0]?.fight_time}`, innerBox: `Cage: ${fights?.[0]?.cage}` }} />
+                <IndivFightCard props={{ title: upcomingFights?.[0]?.robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${upcomingFights?.[0]?.opponent_name}`, sndText: `Live at: ${upcomingFights?.[0]?.fight_time}`, innerBox: `Cage: ${upcomingFights?.[0]?.cage}` }} />
                 {showListOpener &&
                     <View style={styles.listOpener}></View>
                 }
@@ -114,7 +87,7 @@ export default function UpcomingFightList() {
                 >
                     <ScrollView>
                         {upcomingFights.slice(1).map((item, index) => (
-                            <IndivFightCard key={index} props={{ title: item?.robot_name, photoUrl: upcomingPhotos[index + 1], fstText: `Opponent: ${item?.opponent_name}`, sndText: `Live at: ${item?.fight_time}`, innerBox: `Cage: ${item?.cage}` }} />
+                            <IndivFightCard key={index} props={{ title: item?.robot_name, photoUrl: photoUrls[index + 1], fstText: `Opponent: ${item?.opponent_name}`, sndText: `Live at: ${item?.fight_time}`, innerBox: `Cage: ${item?.cage}` }} />
                         ))}
                     </ScrollView>
                 </Animated.View>
@@ -125,6 +98,12 @@ export default function UpcomingFightList() {
 }
 
 const styles = StyleSheet.create({
+    upcomingHeader: {
+        color: "#A5A5A5", 
+        fontSize: 14, 
+        marginTop: 35,
+        marginBottom: 10
+    },
     dropdown: {
         maxHeight: SCREEN_HEIGHT * 0.5,
         overflow: 'hidden',   // clips content cleanly
