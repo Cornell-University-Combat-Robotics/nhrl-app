@@ -114,7 +114,7 @@ export default function UpcomingFightList() {
                 >
                     <ScrollView>
                         {upcomingFights.slice(1).map((item, index) => (
-                            <IndivFightCard key={index} props={{ title: `vs ${item?.opponent_name}`, photoUrl: upcomingPhotos[index + 1], fstText: `Opponent: ${item?.opponent_name}`, sndText: `Live at: ${item?.fight_time}`, innerBox: `Cage: ${item?.cage}` }} />
+                            <IndivFightCard key={index} props={{ title: item?.robot_name, photoUrl: upcomingPhotos[index + 1], fstText: `Opponent: ${item?.opponent_name}`, sndText: `Live at: ${item?.fight_time}`, innerBox: `Cage: ${item?.cage}` }} />
                         ))}
                     </ScrollView>
                 </Animated.View>
