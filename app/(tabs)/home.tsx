@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
+import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
-import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
+import { supabase } from "@/src/supabaseClient";
 
 export default function HomePage() {
     const [checked, setChecked] = useState<Record<number, boolean>>({});
@@ -12,9 +13,26 @@ export default function HomePage() {
     const [fights, setFights] = useState<any[]>([]);
 
     useEffect(() => {
+        // Initial fetch
         getUpcomingFights().then(f => {
             setFights(f);
         });
+
+        // Real-time subscription
+        const channel = supabase
+            .channel('fights-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'fights' },
+                () => {
+                    getUpcomingFights().then(f => setFights(f));
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const toggleChecked = (id: number) => {
@@ -27,7 +45,7 @@ export default function HomePage() {
     const checkedNames = robots
         .map((r, i) => (checked[i] ? r.robot_name : null))
         .filter(Boolean) as string[];
-    
+
 
     //derive filtered fights + photo urls on each render
     const filteredFights = checkedNames.length

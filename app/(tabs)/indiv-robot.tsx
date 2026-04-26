@@ -5,6 +5,7 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { compareFightsByFightTimeAsc } from "../components/fights-section-helper";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 import IndivFightCard from "../components/indiv-fight-card";
+import { supabase } from "@/src/supabaseClient";
 
 export default function IndivRobotScreen() {
     const router = useRouter();
@@ -27,6 +28,23 @@ export default function IndivRobotScreen() {
         getFightsByRobotId(robot_id!).then(f => {
             setFights(f);
         });
+
+        const channel = supabase
+            .channel('fights-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'fights' },
+                () => {
+                    getFightsByRobotId(robot_id!).then(f => {
+                        setFights(f);
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [robot_id]);
 
     const visibleFights = fights

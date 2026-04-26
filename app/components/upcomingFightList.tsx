@@ -1,7 +1,7 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 import IndivFightCard from './indiv-fight-card';
 

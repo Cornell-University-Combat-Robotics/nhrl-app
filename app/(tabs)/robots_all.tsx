@@ -10,16 +10,15 @@ export default function RobotsAllScreen() {
     const [robots, setRobots] = useState<any[]>([]);
 
     useEffect(() => {
-        // Initial fetch
         getRobots().then(r => setRobots(r));
 
-        // Real-time subscription
         const channel = supabase
             .channel('robots-realtime')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'robots' },
-                () => {
+                (payload) => {
+                    console.log('robots changed:', payload);
                     getRobots().then(r => setRobots(r));
                 }
             )
