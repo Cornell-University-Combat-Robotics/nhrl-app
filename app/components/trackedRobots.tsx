@@ -1,3 +1,4 @@
+import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/supabaseClient";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useEffect, useState } from "react";
@@ -8,15 +9,27 @@ import { getRobotPhotoURL } from "./helper-fxns";
 async function getRobots() {
     const { data, error } = await supabase
         .from('robots')
-        .select('robot_name, subteam')
+        .select('robot_id, robot_name, subteam')
 
     if (error || !data) {
         console.error('Error fetching tracked robots:', error);
         return [];
     } else {
-        console.log('Fetched tracked robots:', data);
         return data;
     }
+}
+
+/** Returns set of robot_ids the given profile currently tracks. */
+async function getTrackedRobotIds(profileId: string): Promise<number[]> {
+    const { data, error } = await supabase
+        .from('profile_tracked_robots')
+        .select('robot_id')
+        .eq('profile_id', profileId);
+    if (error || !data) {
+        console.error('Error fetching tracked robot ids:', error);
+        return [];
+    }
+    return data.map((r: { robot_id: number }) => r.robot_id);
 }
 
 export default function TrackedRobots({
@@ -27,44 +40,40 @@ export default function TrackedRobots({
     setRobots,
 }: {
     checked: Record<number, boolean>,
-    toggleChecked: (id: number) => void,
+    toggleChecked: (robotId: number) => void,
     setChecked: React.Dispatch<React.SetStateAction<Record<number, boolean>>>,
     robots: any[],
     setRobots: React.Dispatch<React.SetStateAction<any[]>>,
 }) {
     const [isVisible, setVisibility] = useState(false);
-    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+    const { user } = useAuth();
 
-    const onClose = () => {
-        setVisibility(false);
-    }
+    const onClose = () => setVisibility(false);
 
-
-    const countChecked = () => {
-        return Object.values(checked).filter(value => value == true).length;
-    }
+    const countChecked = () => Object.values(checked).filter(Boolean).length;
 
     useEffect(() => {
-        getRobots().then(r => {
-            setRobots(r);
-            r.map((r, i) => {
-                let url = getRobotPhotoURL(r.robot_name);
-                setPhotoUrls(prev => [...prev, url!]);
-                setChecked(prev => ({
-                    ...prev,
-                    [i]: false
-                }))
-            })
-        }
-        );
-
+        getRobots().then(setRobots);
     }, []);
+
+    //hydrate `checked` from DB whenever user changes (or on initial sign-in)
+    useEffect(() => {
+        if (!user) {
+            setChecked({});
+            return;
+        }
+        getTrackedRobotIds(user.id).then(ids => {
+            const next: Record<number, boolean> = {};
+            for (const id of ids) next[id] = true;
+            setChecked(next);
+        });
+    }, [user?.id]);
 
     return (
         <>
-            <TrackedButton setVisibility={setVisibility} robots={robots} checked={checked} numChecked={countChecked()} photoUrls={photoUrls} />
+            <TrackedButton setVisibility={setVisibility} robots={robots} checked={checked} numChecked={countChecked()} />
             {isVisible &&
-                <TrackedPopUp onClose={onClose} robots={robots} photoUrls={photoUrls} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked} />
+                <TrackedPopUp onClose={onClose} robots={robots} checked={checked} toggleChecked={toggleChecked} countChecked={countChecked} />
             }
         </>
     );
@@ -75,39 +84,33 @@ function TrackedButton({
     robots,
     checked,
     numChecked,
-    photoUrls
 }: {
     setVisibility: React.Dispatch<React.SetStateAction<boolean>>,
     robots: any[],
     checked: Record<number, boolean>,
     numChecked: number,
-    photoUrls: string[]
 }) {
-    //to track number of photos in button, and to help render the "+2" when >2 robots selected
+    //to track number of photos in button, and to help render the "+N" when >2 robots selected
     const overTwo = numChecked > 2;
-    const allChecked = robots.map((_, i) => i).filter(i => checked[i]);
-    const renderedRobotIdxs = overTwo ? allChecked.slice(0, 2) : allChecked;
+    const checkedRobots = robots.filter(r => checked[r.robot_id]);
+    const renderedRobots = overTwo ? checkedRobots.slice(0, 2) : checkedRobots;
 
     return (
         <>
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => {
-                    setVisibility(v => !v)
-                    console.log("pressed tracking button")
-                }}
+                onPress={() => setVisibility(v => !v)}
             >
                 <Text style={styles.text}>Tracked Robots</Text>
                 {numChecked == 0 ? (
                     <AntDesign name="plus" size={20} color="#000000" style={{ marginLeft: 5 }} />
                 ) : (
                     <View style={styles.plusPhotoContainer}>
-                        {renderedRobotIdxs.map((i, _) =>
-                            checked[i] &&
-                            <Image key={i} source={{ uri: photoUrls[i] }} style={styles.plusPhoto} />
+                        {renderedRobots.map((r) =>
+                            <Image key={r.robot_id} source={{ uri: getRobotPhotoURL(r.robot_name) ?? "" }} style={styles.plusPhoto} />
                         )}
                         {overTwo &&
-                            <Text style={[styles.plusPhoto, styles.plusText, { backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2 }]}>+3</Text>
+                            <Text style={[styles.plusPhoto, styles.plusText, { backgroundColor: '#BF2E2E', paddingLeft: 3, paddingTop: 2 }]}>+{numChecked - 2}</Text>
                         }
                     </View>
                 )}
@@ -120,16 +123,14 @@ function TrackedButton({
 function TrackedPopUp({
     onClose,
     robots,
-    photoUrls,
     checked,
     toggleChecked,
     countChecked
 }: {
     onClose: () => void,
     robots: any[],
-    photoUrls: string[],
     checked: Record<number, boolean>,
-    toggleChecked: (id: number) => void,
+    toggleChecked: (robotId: number) => void,
     countChecked: () => number
 }) {
     //note that states here get destroyed every time pop up closes, so should keep states in parent TrackedRobots instead
@@ -148,10 +149,10 @@ function TrackedPopUp({
                         </View>
                     </View>
 
-                    {robots.map((r, i) => (
-                        <View key={i} style={styles.row}>
+                    {robots.map((r) => (
+                        <View key={r.robot_id} style={styles.row}>
                             <Image
-                                source={{ uri: photoUrls[i] }}
+                                source={{ uri: getRobotPhotoURL(r.robot_name) ?? "" }}
                                 style={styles.photo}
                             />
                             <View style={styles.robotText}>
@@ -160,8 +161,8 @@ function TrackedPopUp({
                             </View>
 
                             <Checkbox
-                                status={checked[i] ? 'checked' : 'unchecked'}
-                                onPress={() => toggleChecked(i)}
+                                status={checked[r.robot_id] ? 'checked' : 'unchecked'}
+                                onPress={() => toggleChecked(r.robot_id)}
                             />
 
                         </View>

@@ -7,16 +7,16 @@ type SupabaseClientType = import('@supabase/supabase-js').SupabaseClient;
 /** Max number of pushes to send in one batch to Expo. (expo limits this) */
 const EXPO_BATCH_SIZE = 100;
 
-/** Broadcast "New Fight" to all profiles with expo_push_token (fight time, cage, opponents). */
+/** Notify "New Fight" to users tracking this robot only. */
 export async function createFightNotifBroadcast(
     createdFight: Fight,
     supabaseClient: SupabaseClientType
   ) {
     const msg = `${createdFight.robot_name ?? 'Robot'} vs ${createdFight.opponent_name} scheduled for ${createdFight.fight_time ? createdFight.fight_time : 'TBD'} at Cage ${createdFight.cage ?? '?'}.`;
-    await editFightNotifBroadcast('New Fight', msg, supabaseClient);
+    await editFightNotifBroadcast('New Fight', msg, createdFight.robot_id, supabaseClient);
   }
 
-/** Broadcast "Fight Result" (if isWinUpdate) or "Updated Fight"; uses same client to fetch profiles. */
+/** Notify "Fight Result"/"Updated Fight" to users tracking this robot only. */
 export async function updateFightNotifBroadcast(
     updatedFight: Fight,
     supabaseClient: SupabaseClientType,
@@ -29,10 +29,10 @@ export async function updateFightNotifBroadcast(
       const result = (updatedFight.is_win === 'win') ? 'WIN!' : 'LOSS';
       const outcome = updatedFight.outcome_type ? ` (${updatedFight.outcome_type})` : '';
       const msg = `Fight Result: ${robotName} vs ${opponentName} - ${result}${outcome}`;
-      await editFightNotifBroadcast('Fight Result', msg, supabaseClient);
+      await editFightNotifBroadcast('Fight Result', msg, updatedFight.robot_id, supabaseClient);
     } else {
       const msg = `${robotName} vs ${opponentName} scheduled for ${updatedFight.fight_time ? updatedFight.fight_time : 'TBD'} at Cage ${updatedFight.cage ?? '?'}.`;
-      await editFightNotifBroadcast('Updated Fight', msg, supabaseClient);
+      await editFightNotifBroadcast('Updated Fight', msg, updatedFight.robot_id, supabaseClient);
     } 
   }
 
@@ -71,37 +71,55 @@ async function sendPushBatch(messages: { to: string, title: string, body: string
   return response.json();
 }
 
-/** Fetches all profiles with expo_push_token, sends one push per profile (title + msg). Used by create/update broadcast. */
+/**
+ * Sends `title`/`msg` only to users tracking `robotId` (via `profile_tracked_robots` join table).
+ * No-op if `robotId` is missing or no trackers have a push token.
+ */
   export async function editFightNotifBroadcast(
     title: string,
     msg: string,
+    robotId: number | undefined,
     supabaseClient: SupabaseClientType
   ) {
-    //fetch all expo_push_token from existing profiles
-    const { data: profiles, error } = await supabaseClient
-      .from('profiles')
-      .select('expo_push_token')
-      .not('expo_push_token', 'is', null)
-      .neq('expo_push_token', '');
-  
-    if (error) {
-      console.error('Error fetching push tokens for broadcast:', error);
+    if (robotId == null) {
+      console.warn('editFightNotifBroadcast: missing robotId; skipping push.');
       return;
     }
 
-    //for each profile, create a message object with the profile's expo_push_token, title, and msg
-    //this is cumulation of all messages to send to all profiles
-    const messages = (profiles ?? [])
-      .map((p) => ({
-        to: p.expo_push_token,
-        title,
-        body: msg
-      }))
-    
-    //split messages into batches of size EXPO_BATCH_SIZE
-    const batches = chunk(messages, EXPO_BATCH_SIZE);
+    //find all profile_ids tracking this robot
+    const { data: tracked, error: trackedErr } = await supabaseClient
+      .from('profile_tracked_robots')
+      .select('profile_id')
+      .eq('robot_id', robotId);
 
-    for(const batch of batches) {
+    if (trackedErr) {
+      console.error('Error fetching trackers for robot:', trackedErr);
+      return;
+    }
+
+    const profileIds = (tracked ?? []).map((t: { profile_id: string }) => t.profile_id);
+    if (profileIds.length === 0) return;
+
+    //fetch push tokens for those profiles
+    const { data: profiles, error } = await supabaseClient
+      .from('profiles')
+      .select('expo_push_token')
+      .in('id', profileIds)
+      .not('expo_push_token', 'is', null)
+      .neq('expo_push_token', '');
+
+    if (error) {
+      console.error('Error fetching push tokens for tracked recipients:', error);
+      return;
+    }
+
+    const messages = (profiles ?? []).map((p) => ({
+      to: p.expo_push_token,
+      title,
+      body: msg,
+    }));
+
+    for (const batch of chunk(messages, EXPO_BATCH_SIZE)) {
       await sendPushBatch(batch);
     }
   }
