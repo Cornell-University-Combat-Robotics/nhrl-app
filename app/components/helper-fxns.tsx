@@ -2,17 +2,18 @@ import { supabase } from "@/src/supabaseClient";
 import { StyleSheet, Text, View } from "react-native";
 
 export const subteamColors: Record<string, string> = {
-    "sportsman": "#0B539450",
+    "sportsman": "#1f398d50",
     "kinetic": "#19743450",
     "marketing": "#FF980050",
     "autonomous": "#C7AF4E50",
-    "infinity": "0C8CA250"
+    "infinity": "#5ECAD450"
 }
 
 export async function getUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
         .select('fight_id, robot_name, opponent_name, cage, fight_time')
+        .is('is_win', null)
         .order('fight_time', { ascending: true });
     if (error || !data) {
         console.error('Error fetching fights:', error);
