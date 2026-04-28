@@ -44,8 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session) {
         const currentUser = session.user;
+        console.log('[push-store] session active for user:', currentUser?.id, currentUser?.email);
+
         registerForPushNotificationsAsync().then(async (token: string | undefined) => {
-          if (token) console.log('Expo push token:', token);
+          console.log('[push-store] device returned token:', token);
 
           if (currentUser && token) {
             const { data, error } = await supabase
@@ -55,38 +57,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .single();
 
             if (error) {
-              console.error('Error getting expo push token:', error);
+              console.error('[push-store] error reading existing token:', error);
               return;
-            }else{
-              console.log('Expo push token found:', data?.expo_push_token);
             }
 
-            console.log('Expo push token:', data?.expo_push_token);
+            console.log('[push-store] existing token in DB:', data?.expo_push_token);
+
             if (data?.expo_push_token == null) {
+              console.log('[push-store] no token stored; inserting this device\'s token');
               const { error: insertError } = await supabase
                 .from('profiles')
                 .update({ expo_push_token: token })
                 .eq('id', currentUser.id);
 
               if (insertError) {
-                console.error('Error inserting expo push token:', insertError);
-              }else{
-                console.log('Expo push token inserted successfully');
+                console.error('[push-store] insert error:', insertError);
+              } else {
+                console.log('[push-store] insert OK');
               }
+            } else if (data.expo_push_token === token) {
+              console.log('[push-store] same device token already stored; no change');
             } else {
+              //IMPORTANT: this means another device previously registered, and we're overwriting.
+              //Same Supabase user across two devices => only the last-signed-in device receives pushes.
+              console.warn('[push-store] OVERWRITING token from another device for user:', currentUser.id, {
+                old: data.expo_push_token,
+                new: token,
+              });
               const { error: updateError } = await supabase
                 .from('profiles')
                 .update({ expo_push_token: token })
                 .eq('id', currentUser.id);
 
               if (updateError) {
-                console.error('Error updating expo push token:', updateError);
-              }else{
-                console.log('Expo push token updated successfully');
+                console.error('[push-store] update error:', updateError);
+              } else {
+                console.log('[push-store] update OK (previous device will no longer get pushes)');
               }
             }
           } else {
-            console.warn('User not found in auth context. Expo push token will be lost.');
+            console.warn('[push-store] no user or no token; nothing stored.', {
+              hasUser: !!currentUser,
+              hasToken: !!token,
+            });
           }
         });
       }

@@ -56,6 +56,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
  * @returns Expo API JSON
 */
 async function sendPushBatch(messages: { to: string, title: string, body: string }[]) {
+  console.log(`[push] sending batch of ${messages.length} message(s) to Expo`);
+  console.log('[push] target tokens:', messages.map(m => maskToken(m.to)));
+
   const response = await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',
     headers: {
@@ -65,14 +68,43 @@ async function sendPushBatch(messages: { to: string, title: string, body: string
   });
 
   if(!response.ok) {
-    console.error('Failed to send push notification:', response.statusText);
+    console.error('[push] HTTP error from Expo:', response.status, response.statusText);
   }
 
-  return response.json();
+  const json = await response.json();
+
+  //log per-ticket result so we can see DeviceNotRegistered, MessageRateExceeded, etc.
+  if (Array.isArray(json?.data)) {
+    json.data.forEach((ticket: any, i: number) => {
+      const to = maskToken(messages[i]?.to ?? '');
+      if (ticket.status === 'ok') {
+        console.log(`[push] OK -> ${to} (id=${ticket.id})`);
+      } else {
+        console.warn(`[push] NOT OK -> ${to}`, ticket);
+      }
+    });
+  } else if (json?.errors) {
+    console.error('[push] Expo returned errors:', json.errors);
+  }
+
+  return json;
+}
+
+/** Mask middle of expo token to avoid noisy logs while still being identifiable. */
+function maskToken(t: string): string {
+  if (!t) return '<empty>';
+  if (t.length <= 14) return t;
+  return `${t.slice(0, 18)}...${t.slice(-4)}`;
 }
 
 /**
- * Sends `title`/`msg` only to users tracking `robotId` (via `profile_tracked_robots` join table).
+ * Sends `title`/`msg` only to users tracking `robotId`.
+ *
+ * Uses the `get_push_tokens_for_robot` SQL function (SECURITY DEFINER) so that even
+ * when called from a regular user's authenticated client, RLS does not hide other
+ * users' tracker rows / push tokens. Without this, phone A's session would only see
+ * its own tracking row and never notify phone B.
+ *
  * No-op if `robotId` is missing or no trackers have a push token.
  */
   export async function editFightNotifBroadcast(
@@ -81,40 +113,37 @@ async function sendPushBatch(messages: { to: string, title: string, body: string
     robotId: number | undefined,
     supabaseClient: SupabaseClientType
   ) {
+    console.log(`[push] editFightNotifBroadcast START -> title="${title}" robotId=${robotId}`);
+
     if (robotId == null) {
-      console.warn('editFightNotifBroadcast: missing robotId; skipping push.');
+      console.warn('[push] missing robotId; skipping push.');
       return;
     }
 
-    //find all profile_ids tracking this robot
-    const { data: tracked, error: trackedErr } = await supabaseClient
-      .from('profile_tracked_robots')
-      .select('profile_id')
-      .eq('robot_id', robotId);
-
-    if (trackedErr) {
-      console.error('Error fetching trackers for robot:', trackedErr);
-      return;
-    }
-
-    const profileIds = (tracked ?? []).map((t: { profile_id: string }) => t.profile_id);
-    if (profileIds.length === 0) return;
-
-    //fetch push tokens for those profiles
-    const { data: profiles, error } = await supabaseClient
-      .from('profiles')
-      .select('expo_push_token')
-      .in('id', profileIds)
-      .not('expo_push_token', 'is', null)
-      .neq('expo_push_token', '');
+    //fetch push tokens for all users tracking this robot via SECURITY DEFINER RPC
+    const { data: tokenRows, error } = await supabaseClient.rpc(
+      'get_push_tokens_for_robot',
+      { target_robot_id: robotId }
+    );
 
     if (error) {
-      console.error('Error fetching push tokens for tracked recipients:', error);
+      console.error('[push] Error calling get_push_tokens_for_robot:', error);
       return;
     }
 
-    const messages = (profiles ?? []).map((p) => ({
-      to: p.expo_push_token,
+    const tokens: string[] = ((tokenRows as { expo_push_token: string | null }[] | null) ?? [])
+      .map((r) => r.expo_push_token)
+      .filter((t): t is string => !!t);
+
+    console.log(`[push] ${tokens.length} token(s) found for robot_id=${robotId}:`, tokens.map(maskToken));
+
+    if (tokens.length === 0) {
+      console.log('[push] no recipients with valid tokens; nothing to send.');
+      return;
+    }
+
+    const messages: { to: string; title: string; body: string }[] = tokens.map((to) => ({
+      to,
       title,
       body: msg,
     }));
@@ -122,4 +151,6 @@ async function sendPushBatch(messages: { to: string, title: string, body: string
     for (const batch of chunk(messages, EXPO_BATCH_SIZE)) {
       await sendPushBatch(batch);
     }
+
+    console.log(`[push] editFightNotifBroadcast DONE -> title="${title}" robotId=${robotId}`);
   }
