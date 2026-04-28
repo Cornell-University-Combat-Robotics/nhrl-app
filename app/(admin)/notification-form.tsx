@@ -1,4 +1,4 @@
-import { editFightNotifBroadcast } from '@/src/notifications/sendPushNotif';
+import { sendCustomBroadcast } from '@/src/notifications/sendPushNotif';
 import { supabase } from '@/src/supabaseClient';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -24,7 +24,7 @@ export default function NotificationFormScreen() {
     }
     setIsSending(true);
     try {
-      await editFightNotifBroadcast(title.trim(), message.trim(), supabase);
+      await sendCustomBroadcast(title.trim(), message.trim(), supabase);
       Alert.alert('Success', 'Notification sent to all users with push tokens.');
       setTitle('');
       setMessage('');

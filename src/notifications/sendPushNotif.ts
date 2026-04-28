@@ -154,3 +154,49 @@ function maskToken(t: string): string {
 
     console.log(`[push] editFightNotifBroadcast DONE -> title="${title}" robotId=${robotId}`);
   }
+
+/**
+ * Sends `title`/`msg` to ALL users with a push token, regardless of tracked robots.
+ *
+ * Uses the `get_all_push_tokens` SQL function (SECURITY DEFINER) so that an
+ * authenticated admin client can read every user's token despite RLS.
+ *
+ * Intended for one-off admin announcements (see `app/(admin)/notification-form.tsx`).
+ */
+export async function sendCustomBroadcast(
+  title: string,
+  msg: string,
+  supabaseClient: SupabaseClientType
+) {
+  console.log(`[push] sendCustomBroadcast START -> title="${title}"`);
+
+  const { data: tokenRows, error } = await supabaseClient.rpc('get_all_push_tokens');
+
+  if (error) {
+    console.error('[push] Error calling get_all_push_tokens:', error);
+    throw error;
+  }
+
+  const tokens: string[] = ((tokenRows as { expo_push_token: string | null }[] | null) ?? [])
+    .map((r) => r.expo_push_token)
+    .filter((t): t is string => !!t);
+
+  console.log(`[push] ${tokens.length} token(s) found for broadcast:`, tokens.map(maskToken));
+
+  if (tokens.length === 0) {
+    console.log('[push] no recipients with valid tokens; nothing to send.');
+    return;
+  }
+
+  const messages: { to: string; title: string; body: string }[] = tokens.map((to) => ({
+    to,
+    title,
+    body: msg,
+  }));
+
+  for (const batch of chunk(messages, EXPO_BATCH_SIZE)) {
+    await sendPushBatch(batch);
+  }
+
+  console.log(`[push] sendCustomBroadcast DONE -> title="${title}"`);
+}
