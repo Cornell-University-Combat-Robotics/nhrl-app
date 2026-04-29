@@ -16,20 +16,30 @@ Notifications.setNotificationHandler({
 
 /** Returns Expo push token or undefined if not device / permission denied. Requires EXPO_PUBLIC_EXPO_PROJECT_ID. */
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
+    console.log('[push-register] start', {
+        platform: Platform.OS,
+        isDevice: Device.isDevice,
+        deviceName: Device.deviceName,
+        modelName: Device.modelName,
+    });
+
     if(!Device.isDevice){
-        console.warn('Must use physical device for Push Notifications');
+        console.warn('[push-register] must use physical device for Push Notifications');
         return undefined;
     }
 
     const { status : existing } = await Notifications.getPermissionsAsync();
+    console.log('[push-register] existing permission status:', existing);
     let finalStatus = existing;
 
     if(existing !== 'granted'){
         const { status } = await Notifications.requestPermissionsAsync();
+        console.log('[push-register] requested permission status:', status);
         finalStatus = status;
     }
 
     if(finalStatus !== 'granted'){
+        console.warn('[push-register] permission not granted; final status:', finalStatus);
         alert('Failed to get push token for push notification!');
         return undefined;
     }
@@ -38,5 +48,6 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     const pushToken = await Notifications.getExpoPushTokenAsync({
         projectId: process.env.EXPO_PUBLIC_EXPO_PROJECT_ID!,
     });
+    console.log('[push-register] got token for this device:', pushToken.data);
     return pushToken.data;
 }

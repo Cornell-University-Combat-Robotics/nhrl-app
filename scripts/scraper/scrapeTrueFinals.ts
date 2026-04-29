@@ -8,6 +8,7 @@ import puppeteer from 'puppeteer';
 import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
+import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** TrueFinals 12lb exhibition page URL. */

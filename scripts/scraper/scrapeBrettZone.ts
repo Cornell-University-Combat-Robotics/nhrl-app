@@ -9,6 +9,7 @@ import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { formatTime } from '../../src/utils/formatTime.ts';
 import { log } from '../../src/utils/log.ts';
+import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** BrettZone API base URL; query with ?bot=<robotName>. Override via SCRAPER_TARGET_URL. */

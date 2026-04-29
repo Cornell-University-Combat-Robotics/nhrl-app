@@ -8,12 +8,17 @@ import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
+import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { supabase } from "@/src/supabaseClient";
+import { router } from "expo-router";
 
 export default function HomePage() {
+    //`checked` is keyed by robot_id (true = currently tracked by signed-in user)
     const [checked, setChecked] = useState<Record<number, boolean>>({});
     const [robots, setRobots] = useState<any[]>([]);
     const [fights, setFights] = useState<any[]>([]);
-    const { isAdmin } = useAuth();
+    const { isAdmin, user } = useAuth();
 
     useEffect(() => {
         // Initial fetch
@@ -38,22 +43,44 @@ export default function HomePage() {
         };
     }, []);
 
-    const toggleChecked = (id: number) => {
-        setChecked(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }))
-    }
+    /**
+     * Toggle tracking for a robot. Optimistic UI update + persist to
+     * `profile_tracked_robots` so push notifications can target this user.
+     */
+    const toggleChecked = async (robotId: number) => {
+        if (!user) return;
+        const wasChecked = !!checked[robotId];
+        setChecked(prev => ({ ...prev, [robotId]: !wasChecked }));
+
+        if (wasChecked) {
+            const { error } = await supabase
+                .from('profile_tracked_robots')
+                .delete()
+                .eq('profile_id', user.id)
+                .eq('robot_id', robotId);
+            if (error) {
+                console.error('Error untracking robot:', error);
+                setChecked(prev => ({ ...prev, [robotId]: true }));
+            }
+        } else {
+            const { error } = await supabase
+                .from('profile_tracked_robots')
+                .upsert({ profile_id: user.id, robot_id: robotId }, { onConflict: 'profile_id,robot_id' });
+            if (error) {
+                console.error('Error tracking robot:', error);
+                setChecked(prev => ({ ...prev, [robotId]: false }));
+            }
+        }
+    };
 
     const checkedNames = robots
-        .map((r, i) => (checked[i] ? r.robot_name : null))
-        .filter(Boolean) as string[];
+        .filter(r => checked[r.robot_id])
+        .map(r => r.robot_name) as string[];
 
-
-    //derive filtered fights + photo urls on each render
+    //derive filtered fights + photo urls on each render; render none if no robots tracked
     const filteredFights = checkedNames.length
         ? fights.filter(fight => checkedNames.includes(fight.robot_name))
-        : fights;
+        : [];
     const photoUrls = filteredFights.map(fight => getRobotPhotoURL(fight?.robot_name || "") ?? "");
 
 
