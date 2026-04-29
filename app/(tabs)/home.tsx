@@ -8,10 +8,6 @@ import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
-import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
-import { useAuth } from "@/src/contexts/AuthContext";
-import { supabase } from "@/src/supabaseClient";
-import { router } from "expo-router";
 
 export default function HomePage() {
     //`checked` is keyed by robot_id (true = currently tracked by signed-in user)
