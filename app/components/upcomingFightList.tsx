@@ -8,9 +8,8 @@ import IndivFightCard from './indiv-fight-card';
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 export default function UpcomingFightList({upcomingFights, photoUrls}: {upcomingFights: any[], photoUrls: string[]}) {
-    if (upcomingFights.length === 0) return null;
-
     const [renderList, setRenderList] = useState(false);
+    const hasUpcomingFights = upcomingFights.length > 0;
 
     const slideAnim = useRef(new Animated.Value(-50)).current; //ref instead of state so react doesn't re-render whenever value changes
     const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +66,8 @@ export default function UpcomingFightList({upcomingFights, photoUrls}: {upcoming
 
     return (
         <>
+            {!hasUpcomingFights ? null : (
+            <>
             <Text style={styles.upcomingHeader}>UPCOMING FIGHTS</Text>
             <TouchableOpacity
                 onPress={() => { toggleList() }}
@@ -91,6 +92,8 @@ export default function UpcomingFightList({upcomingFights, photoUrls}: {upcoming
                         ))}
                     </ScrollView>
                 </Animated.View>
+            )}
+            </>
             )}
         </>
     );

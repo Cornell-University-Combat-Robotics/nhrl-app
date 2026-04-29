@@ -56,7 +56,6 @@ export default function AdminDashboard() {
           <Text style={styles.cardTitle}>👥 Subteams</Text>
           <Text style={styles.cardDescription}>Manage subteam entries</Text>
         </TouchableOpacity>
-📱
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push('/(admin)/notification-form')}
