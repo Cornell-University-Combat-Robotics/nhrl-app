@@ -39,8 +39,6 @@ export default function IndivFightCard({ props }: { props: FightCardProps }) {
     );
 }
 
-
-
 const styles = StyleSheet.create({
     card: {
         borderRadius: 10,

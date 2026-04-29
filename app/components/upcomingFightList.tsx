@@ -1,7 +1,7 @@
 import { supabase } from '@/src/supabaseClient';
 import { log } from '@/src/utils/log';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { getRobotPhotoURL } from './helper-fxns';
 import IndivFightCard from './indiv-fight-card';
 
@@ -46,7 +46,7 @@ export default function UpcomingFightList({upcomingFights, photoUrls}: {upcoming
                     useNativeDriver: true
                 })
             ]).start(() => {
-                setRenderList(false);
+                setRenderList(false); 
             });
         }
     }, [renderList]);
@@ -75,7 +75,7 @@ export default function UpcomingFightList({upcomingFights, photoUrls}: {upcoming
             >
                 <IndivFightCard props={{ title: upcomingFights?.[0]?.robot_name, photoUrl: photoUrls[0], fstText: `Opponent: ${upcomingFights?.[0]?.opponent_name}`, sndText: `Live at: ${upcomingFights?.[0]?.fight_time}`, innerBox: `Cage: ${upcomingFights?.[0]?.cage}` }} />
                 {showListOpener &&
-                    <View style={styles.listOpener}></View>
+                    <View style={styles.listOpener} />
                 }
             </TouchableOpacity>
             {renderList && (
@@ -99,6 +99,7 @@ export default function UpcomingFightList({upcomingFights, photoUrls}: {upcoming
     );
 
 }
+
 
 const styles = StyleSheet.create({
     upcomingHeader: {
@@ -127,17 +128,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 5,
         zIndex: 2,
         position: 'relative'
-        //manually flexDirection = column
     },
     topRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between', //space out the text and image to left & right
-        alignItems: 'center' //vertically center the text and image
+        justifyContent: 'space-between',
+        alignItems: 'center'
     },
     bottomRow: {
-        flex: 1,               // take up remaining vertical space
-        justifyContent: 'center', // center vertically (main axis)
-        alignItems: 'flex-start'  // keep text left-aligned horizontally
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'flex-start'
     },
     ourRobotText: {
         fontSize: 20,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         margin: 15,
         width: '20%',
-        height: 50, //of parent comp
+        height: 50,
         justifyContent: 'center',
         alignItems: 'center'
     },
@@ -177,4 +177,4 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center'
     }
-})
+});

@@ -203,14 +203,3 @@ export async function runWithScheduler(
   }
 }
 
-/**
- * List of CRC robot names scraped by BrettZone and TrueFinals. Each must exist in `robots.robot_name`.
- */
-export const CRC_ROBOTS = [
-  'Benny R. Johm',
-  'Capsize',
-  'Huey',
-  'Apollo',
-  'Jormangandr',
-  'Unkulunkulu'
-]
