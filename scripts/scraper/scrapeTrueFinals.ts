@@ -8,7 +8,6 @@ import puppeteer from 'puppeteer';
 import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
-import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** TrueFinals 12lb exhibition page URL. */
@@ -157,7 +156,9 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             */
 
             //identify robot vs opponent
-            const our_robot_idx = robot_names.findIndex((name,idx) => CRC_ROBOTS.includes(name));
+            //cast to readonly string[] because CRC_ROBOTS is `as const` (a readonly tuple of literals)
+            //and .includes() on such a tuple narrows the argument type to the tuple's element types
+            const our_robot_idx = robot_names.findIndex((name) => (CRC_ROBOTS as readonly string[]).includes(name));
             if(our_robot_idx === -1) {
                 //not fight involving our robot, move on the next button component (next fight)
                 continue;
@@ -195,7 +196,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             Else, if no field changed, then NO notif.
             */
 
-            let is_win;
+            let is_win: 'win' | 'lose' | null;
             if(our_win_status === '0' && opponent_win_status === '0') {
               is_win = null;
             }else{
@@ -227,27 +228,30 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               }
               await createFightNotifBroadcast(payload, supabaseAdmin);
             }else{
-              //each fight triplet (robot, opponent, competition) is constrained to be unique in supabase
-              //check if fight time, cage, or win status has changed
-              if(prev.is_win !== is_win && (prev.fight_time !== fight_time || prev.cage !== cage)) {
-                //fight is complete
-                const { error } = await supabaseAdmin.from('fights')
-                  .upsert(payload, {
-                    onConflict: 'robot_name, opponent_name, competition'
-                  })
-                if(error) {
-                  console.error('Error updating supabase:', error);
-                  continue;
-                }
+              //is_win NULL -> non-null = fight just concluded -> Fight Result notif
+              const isWinTransition = prev.is_win == null && is_win != null;
+              //fight_time/cage updates -> Updated Fight notif (only if not already complete)
+              const wasAlreadyComplete = prev.is_win != null;
+              const scheduleChanged = prev.fight_time !== fight_time || prev.cage !== cage;
 
-                if(prev.is_win !== is_win) {
-                  await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
-                }else{
-                  await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
-                }
-              }else {
-                //no changes, so ignore
+              if (!isWinTransition && !scheduleChanged) {
+                //nothing meaningful changed, skip upsert + notif
                 continue;
+              }
+
+              const { error } = await supabaseAdmin.from('fights')
+                .upsert(payload, {
+                  onConflict: 'robot_name, opponent_name, competition'
+                });
+              if (error) {
+                console.error('Error updating supabase:', error);
+                continue;
+              }
+
+              if (isWinTransition) {
+                await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
+              } else if (!wasAlreadyComplete && scheduleChanged) {
+                await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
               }
             }
         };

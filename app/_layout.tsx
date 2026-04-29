@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/src/contexts/AuthContext';
+import { useFightNotifications } from '@/src/hooks/useFightNotifications';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
@@ -6,6 +7,15 @@ import { useEffect, useRef } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState, Platform } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
+
+/**
+ * Mounts the realtime fight-notifications listener so it can use `useAuth`
+ * (which requires being a child of `<AuthProvider>`). Renders nothing.
+ */
+function FightNotificationsListener() {
+  useFightNotifications();
+  return null;
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +77,7 @@ export default function RootLayout() {
     <PaperProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
+          <FightNotificationsListener />
           <Stack
             screenOptions={{
               headerShown: false,
