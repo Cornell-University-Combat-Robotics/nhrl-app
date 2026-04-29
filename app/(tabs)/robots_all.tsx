@@ -35,7 +35,7 @@ export default function RobotsAllScreen() {
                 <Image source={crcSymbol} style={{ width: 50, height: 50 }} />
                 <Text style={styles.robotHeader}>Robots</Text>
             </View>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ paddingBottom: 90 }}>
                 {robots
                     .sort((a, b) => a.robot_name.localeCompare(b.robot_name)) //sort alphabetically
                     .sort((a, b) => a.is_eliminated ? 1 : b.is_eliminated ? -1 : 0) //sort by is_eliminated 
@@ -61,7 +61,6 @@ export default function RobotsAllScreen() {
 const styles = StyleSheet.create({
     container: {
         padding: 20,
-        ...StyleSheet.absoluteFillObject
     },
     topNav: {
         flexDirection: "row",
