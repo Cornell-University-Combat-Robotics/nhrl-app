@@ -1,3 +1,6 @@
+import { useAuth } from "@/src/contexts/AuthContext";
+import { supabase } from "@/src/supabaseClient";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
@@ -5,10 +8,6 @@ import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
-import { supabase } from "@/src/supabaseClient";
-import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
-import { useAuth } from "@/src/contexts/AuthContext";
-import { router } from "expo-router";
 
 export default function HomePage() {
     const [checked, setChecked] = useState<Record<number, boolean>>({});
