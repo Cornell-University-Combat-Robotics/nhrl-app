@@ -2,7 +2,7 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/supabaseClient";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
 import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
