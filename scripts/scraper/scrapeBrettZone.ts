@@ -9,7 +9,6 @@ import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { formatTime } from '../../src/utils/formatTime.ts';
 import { log } from '../../src/utils/log.ts';
-import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** BrettZone API base URL; query with ?bot=<robotName>. Override via SCRAPER_TARGET_URL. */
@@ -115,12 +114,16 @@ async function upsertFight(f: any) {
       await createFightNotifBroadcast(payload, supabaseAdmin)
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     } else {
-      if (!wasAlreadyComplete && (payload.fight_time !== existing.fight_time || payload.cage !== existing.cage)) {
-        if (payload.is_win === null) {
-          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
-        } else {
-          await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true })
-        }
+      //is_win NULL -> non-null is the "fight just concluded" signal -> Fight Result notif
+      const isWinTransition = existing.is_win == null && payload.is_win != null
+      //fight_time/cage updates while still incomplete -> Updated Fight notif
+      const scheduleChanged =
+        payload.fight_time !== existing.fight_time || payload.cage !== existing.cage
+
+      if (isWinTransition) {
+        await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true })
+      } else if (!wasAlreadyComplete && scheduleChanged) {
+        await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
       }
       log('info', `Updated fight ${existing.fight_id} for ${f.robot_name}`)
     }
