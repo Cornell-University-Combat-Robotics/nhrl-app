@@ -5,10 +5,11 @@
 import axios from 'axios';
 import 'dotenv/config';
 import type { Fight } from '../../src/db/fights.ts';
+import { CRC_ROBOTS } from '../../src/db/robots.ts';
 import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { formatTime } from '../../src/utils/formatTime.ts';
 import { log } from '../../src/utils/log.ts';
-import { CRC_ROBOTS, getRobotId, supabaseAdmin } from './scraperHelper.js';
+import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** BrettZone API base URL; query with ?bot=<robotName>. Override via SCRAPER_TARGET_URL. */
 const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'

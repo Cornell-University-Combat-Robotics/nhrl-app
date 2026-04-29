@@ -12,6 +12,15 @@ export interface Robot {
   weapon_speed?: number;
 }
 
+export const CRC_ROBOTS = [
+  'Benny R. Johm',
+  'Huey',
+  'Apollo',
+  'Jormangandr',
+  'Four Horsemen',
+] as const;
+export type CRCRobotName = typeof CRC_ROBOTS[number];
+
 /** All robots, joined with builders; order by robot_id desc. */
 export async function getAllRobots() {
   const { data, error } = await supabase
