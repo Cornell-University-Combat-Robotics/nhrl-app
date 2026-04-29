@@ -203,14 +203,5 @@ export async function runWithScheduler(
   }
 }
 
-/**
- * List of CRC robot names scraped by BrettZone and TrueFinals. Each must exist in `robots.robot_name`.
- */
-export const CRC_ROBOTS = [
-  'Benny R. Johm',
-  'Capsize',
-  'Huey',
-  'Apollo',
-  'Jormangandr',
-  'Unkulunkulu'
-]
+//Source of truth for `CRC_ROBOTS` lives in `src/db/robots.ts` so the Expo app
+//and the scrapers share one list. Import directly from there in scraper files.
