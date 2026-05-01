@@ -150,7 +150,12 @@ function TrackedPopUp({
                     </View>
 
                     {robots.map((r) => (
-                        <View key={r.robot_id} style={styles.row}>
+                        <TouchableOpacity
+                            key={r.robot_id}
+                            style={styles.row}
+                            onPress={() => toggleChecked(r.robot_id)}
+                            activeOpacity={0.7}
+                        >
                             <Image
                                 source={{ uri: getRobotPhotoURL(r.robot_name) ?? "" }}
                                 style={styles.photo}
@@ -162,10 +167,9 @@ function TrackedPopUp({
 
                             <Checkbox
                                 status={checked[r.robot_id] ? 'checked' : 'unchecked'}
-                                onPress={() => toggleChecked(r.robot_id)}
                             />
 
-                        </View>
+                        </TouchableOpacity>
                     ))}
 
                     <TouchableOpacity

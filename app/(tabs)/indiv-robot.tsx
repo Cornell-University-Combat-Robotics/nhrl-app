@@ -1,11 +1,11 @@
 import { getFightsByRobotId } from "@/src/db/fights";
+import { supabase } from "@/src/supabaseClient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { compareFightsByFightTimeAsc } from "../components/fights-section-helper";
 import { EliminatedLabel, getRobotFromId, getRobotPhotoURL, subteamColors, SubteamLabel } from "../components/helper-fxns";
 import IndivFightCard from "../components/indiv-fight-card";
-import { supabase } from "@/src/supabaseClient";
 
 export default function IndivRobotScreen() {
     const router = useRouter();
@@ -90,7 +90,7 @@ export default function IndivRobotScreen() {
                     <Text style={styles.noFightsText}>no fights currently</Text>
                 ) : (
                     visibleFights.map((f, idx) =>
-                        <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, fstText: `Weapon: we dont have this info`, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? `Cage: ${f?.cage}` : f?.is_win === "win" ? `Win` : `Loss` }} />)
+                        <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? (f?.cage ? `Cage: ${f?.cage}` : 'Cage: TBD') : f?.is_win === "win" ? `Win` : `Loss` }} />)
                 )}
             </ScrollView>
             <TouchableOpacity
