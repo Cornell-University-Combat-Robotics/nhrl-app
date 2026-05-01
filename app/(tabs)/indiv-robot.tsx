@@ -90,7 +90,7 @@ export default function IndivRobotScreen() {
                     <Text style={styles.noFightsText}>no fights currently</Text>
                 ) : (
                     visibleFights.map((f, idx) =>
-                        <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, sndText: isUpcoming ? `Live at: ${f?.fight_time}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? (f?.cage ? `Cage: ${f?.cage}` : 'Cage: TBD') : f?.is_win === "win" ? `Win` : `Loss` }} />)
+                        <IndivFightCard key={idx} props={{ title: `vs ${f?.opponent_name}`, photoUrl: photoUrl!, sndText: isUpcoming ? `Live at: ${(f?.fight_time ? f?.fight_time.toLocaleString() : 'TBD')}` : `Fought at: ${f?.fight_time}`, innerBox: isUpcoming ? (f?.cage ? `Cage: ${f?.cage}` : 'Cage: TBD') : f?.is_win === "win" ? `Win` : `Loss` }} />)
                 )}
             </ScrollView>
             <TouchableOpacity
