@@ -28,9 +28,9 @@ export default function IndivFightCard({ props }: { props: FightCardProps }) {
                 </View>
             </View>
             <View style={styles.bottomRow}>
-                {/* <Text style={styles.text}>
+                <Text style={styles.text}>
                     {props?.fstText}
-                </Text> */}
+                </Text>
                 <Text style={styles.text}>
                     {props?.sndText}
                 </Text>
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     card: {
         borderRadius: 10,
         backgroundColor: '#2C2C2C',
-        height: 120,
+        height: 150,
         marginBottom: 10,
         paddingHorizontal: 5,
         zIndex: 2,

@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Checkbox, Portal } from "react-native-paper";
 import { getRobotPhotoURL } from "./helper-fxns";
+import { CRC_ROBOTS } from "@/src/db/robots.ts"
 
 async function getRobots() {
     const { data, error } = await supabase
         .from('robots')
         .select('robot_id, robot_name, subteam')
+        .in('robot_name', CRC_ROBOTS)
 
     if (error || !data) {
         console.error('Error fetching tracked robots:', error);

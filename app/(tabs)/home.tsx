@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
-import { getRobotPhotoURL, getUpcomingFights } from "../components/helper-fxns";
+import { getRobotPhotoURL, getTimeSortedUpcomingFights } from "../components/helper-fxns";
 import HighlightedFight from "../components/highlightedFight";
 import TrackedRobots from "../components/trackedRobots";
 import UpcomingFightList from "../components/upcomingFightList";
@@ -18,7 +18,7 @@ export default function HomePage() {
 
     useEffect(() => {
         // Initial fetch
-        getUpcomingFights().then(f => {
+        getTimeSortedUpcomingFights().then(f => {
             setFights(f);
         });
 
@@ -29,7 +29,7 @@ export default function HomePage() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'fights' },
                 () => {
-                    getUpcomingFights().then(f => setFights(f));
+                    getTimeSortedUpcomingFights().then(f => setFights(f));
                 }
             )
             .subscribe();
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
         marginBottom: 20
     },
     adminButton: {
-        backgroundColor: "#8C2F39",
+        backgroundColor: "#B21C1C",
         borderRadius: 10,
         paddingVertical: 12,
         paddingHorizontal: 14,

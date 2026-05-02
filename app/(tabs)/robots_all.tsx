@@ -1,17 +1,35 @@
 import { supabase } from "@/src/supabaseClient";
+import { log } from '@/src/utils/log';
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import crcSymbol from '../../assets/images/crc-symbol.png';
-import { getRobotPhotoURL, getRobots, subteamColors } from "../components/helper-fxns";
+import { getRobotPhotoURL, getRobots, getUpcomingFights, subteamColors } from "../components/helper-fxns";
 import RobotCard from "../components/robot-card";
 
 //TODO: might wanna move to to hooks
 export default function RobotsAllScreen() {
     const [robots, setRobots] = useState<any[]>([]);
+    //NOT same order as robots!!
+    const [upcomingOpponents, setUpcomingOpponents] = useState<any[]>();
 
     useEffect(() => {
         getRobots().then(r => setRobots(r));
+        getUpcomingFights().then((arr) => {
+            const seen = new Set();
+            const distinct = [];
 
+            for (const fight of arr) {
+                if (!seen.has(fight.robot_name)) {
+                    seen.add(fight.robot_name);
+                    distinct.push(fight);
+                }
+            }
+
+            // just first upcoming fight per robot
+            setUpcomingOpponents(distinct);
+        });
+
+        log('info', 'upcoming opponents: ', { upcomingOpponents })
         const channel = supabase
             .channel('robots-realtime')
             .on(
@@ -20,6 +38,27 @@ export default function RobotsAllScreen() {
                 (payload) => {
                     console.log('robots changed:', payload);
                     getRobots().then(r => setRobots(r));
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'fights' },
+                (payload) => {
+                    console.log('fights changed:', payload);
+                    getUpcomingFights().then((arr) => {
+                        const seen = new Set();
+                        const distinct = [];
+
+                        for (const fight of arr) {
+                            if (!seen.has(fight.robot_name)) {
+                                seen.add(fight.robot_name);
+                                distinct.push(fight);
+                            }
+                        }
+
+                        // just first upcoming fight per robot
+                        setUpcomingOpponents(distinct);
+                    });
                 }
             )
             .subscribe();
@@ -46,7 +85,7 @@ export default function RobotsAllScreen() {
                                 robot_id: r.robot_id,
                                 photoUrl: getRobotPhotoURL(r.robot_name),
                                 robot_name: r.robot_name,
-                                opponent_name: r.upcoming_opponent,
+                                opponent_name: upcomingOpponents?.find((up) => up.robot_name === r.robot_name)?.opponent_name ?? "TBD", //ehh, O(n) but we only have 5 robots so...
                                 is_eliminated: r.is_eliminated,
                                 subteam: r.subteam,
                             }}

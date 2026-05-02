@@ -1,3 +1,4 @@
+import { CRC_ROBOTS } from "@/src/db/robots.ts";
 import { supabase } from "@/src/supabaseClient";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -9,12 +10,13 @@ export const subteamColors: Record<string, string> = {
     "infinity": "#5ECAD450"
 }
 
-export async function getUpcomingFights() {
+export async function getTimeSortedUpcomingFights() {
     const { data, error } = await supabase
         .from('fights')
         .select('fight_id, robot_name, opponent_name, cage, fight_time')
         .is('is_win', null)
-        .order('fight_time', { ascending: true });
+        .in("robot_name", CRC_ROBOTS) //limited to current robots, sorted by increasing fight time, only for non-completed fights
+        .order('fight_time', { ascending: true })
     if (error || !data) {
         console.error('Error fetching fights:', error);
         return [];
@@ -23,6 +25,24 @@ export async function getUpcomingFights() {
         return data; //array of fights (allow for multiple)
     }
 }
+
+export async function getUpcomingFights() {
+    const { data, error } = await supabase
+        .from('fights')
+        .select('fight_id, robot_name, opponent_name, cage, fight_time')
+        .is('is_win', null)
+        .in("robot_name", CRC_ROBOTS) //limited to current robots, sorted by increasing fight time, only for non-completed fights
+        .order("robot_name", { ascending: true })
+        .order('fight_time', { ascending: true })
+    if (error || !data) {
+        console.error('Error fetching fights:', error);
+        return [];
+    } else {
+        console.log('info', 'Fetched fights 1');
+        return data; //array of fights (allow for multiple)
+    }
+}
+
 
 //TODO: encapsulate this -- currently in both trackedRobots & upcomingFightCard
 export function getRobotPhotoURL(name: string) {
@@ -38,6 +58,7 @@ export async function getRobots() {
     const { data, error } = await supabase
         .from("robots")
         .select("robot_id, robot_name, subteam, is_eliminated, upcoming_opponent, vintage, weapon, weight_class")
+        .in("robot_name", CRC_ROBOTS)
     //TODO: need to connect robot table to update upcoming opponent
 
     if (error || !data) {
@@ -65,10 +86,15 @@ export async function getRobotFromId(id: number) {
     }
 }
 
-export function SubteamLabel({ subteam, subteamColor }: { subteam: string, subteamColor: string }) {
+export function titleCase(str?: string) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+export function SubteamLabel({ subteam, subteamColor }: { subteam?: string, subteamColor: string }) {
     return (
         <View style={[styles.label, { backgroundColor: subteamColor, borderColor: subteamColor }]}>
-            <Text style={styles.labelText}>{subteam}</Text>
+            <Text style={styles.labelText}>{titleCase(subteam)}</Text>
         </View>
     );
 }

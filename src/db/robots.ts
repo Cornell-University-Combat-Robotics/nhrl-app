@@ -24,7 +24,7 @@ export const CRC_ROBOTS = [
   'Huey',
   'Apollo',
   'Jormungandr',
-  'Four Horsemen',
+  'The Four Horsemen',
 ] as const;
 export type CRCRobotName = typeof CRC_ROBOTS[number];
 
