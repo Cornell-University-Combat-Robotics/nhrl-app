@@ -4,9 +4,9 @@
  */
 import * as cheerio from "cheerio";
 import 'dotenv/config';
-import puppeteer from 'puppeteer';
+import puppeteer, { type Page } from 'puppeteer';
 import { CRC_ROBOTS } from '../../src/db/robots.ts';
-import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
+import { updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
@@ -16,25 +16,16 @@ const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_may26_12lb/exhibit
 const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_may26_3lb/exhibition';
 
 /**
- * Fetch the full HTML of a URL after JavaScript has run, using a headless browser.
- * Waits for DOM and for exhibition game buttons to appear before returning content.
- *
- * @param url - Full URL to load (e.g. TrueFinals 12lb or 3lb exhibition page).
- * @returns Promise that resolves with the page HTML as a string. Rejects on navigation timeout or selector timeout.
- *
- * Preconditions:
- * - url is reachable; page renders buttons with id matching "game-EX-*".
- * Invariants:
- * - Browser is launched and closed in a try/finally; page is loaded with waitUntil 'domcontentloaded', then waitForSelector('button[id^="game-EX-"]') with 25s timeout. Total navigation timeout 30s.
+ * Opens a headless browser, loads the exhibition URL, waits for game buttons, then runs `fn(page)`.
+ * Browser is always closed after `fn` completes or throws.
  */
-async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
-  const browser = await puppeteer.launch({ headless: true }); //launches headless browser
+async function withTrueFinalsPage(url: string, fn: (page: Page) => Promise<void>): Promise<void> {
+  const browser = await puppeteer.launch({ headless: true });
   try {
-    const page = await browser.newPage(); //new tab in browser
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 }); //goes to URL and waits for DOM to load
-    await page.waitForSelector('button[id^="game-EX-"]', { timeout: 25_000 }); //waits for button with id starting with "game-EX-" to load
-    const html = await page.content(); //returns the HTML of the page
-    return html;
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.waitForSelector('button[id^="game-EX-"]', { timeout: 25_000 });
+    await fn(page);
   } finally {
     await browser.close();
   }
@@ -100,7 +91,8 @@ HTML format:
  * Scrape the TrueFinals exhibition page already loaded into a Cheerio instance.
  * Finds competition title and all "game-EX-*" buttons; for each fight involving a CRC robot, fetches previous DB state, then insert/update/ignore and send notifications as needed.
  *
- * @param $ - Cheerio API instance loaded with the exhibition page HTML (from fetchHtmlWithPuppeteer + cheerio.load).
+ * @param $ - Cheerio API instance loaded with the exhibition page HTML (from page.content + cheerio.load).
+ * @param page - Live Puppeteer page (same session as $) for opening fight dialogs to read "Scheduled For".
  * @returns Promise that resolves when all visible exhibition fights have been processed. Rejects on unexpected errors (DB/notification errors may skip the row and continue).
  *
  * Preconditions:
@@ -110,7 +102,43 @@ HTML format:
  * - Fights not involving any CRC robot are skipped. If both win statuses are 0, is_win is null (incomplete). Updates only when fight_time, cage, or is_win change; no duplicate "Updated Fight" when nothing changed. Match identified by (robot_name, opponent_name, competition).
  */
 //TODO: check if true finals updates more accurately than brettzone
-async function scrapeTrueFinals($: cheerio.CheerioAPI) {
+type DialogFightContext = { our_robot_name: string; opponent_robot_name: string };
+
+async function getDialogScheduledFor(
+  page: Page,
+  gameExSuffix: string,
+  fight: DialogFightContext,
+): Promise<string | null> {
+  const clickSel = `#game-EX-${gameExSuffix}`;
+  const dbg = { ...fight, gameExSuffix, clickSel };
+  try {
+    log('info', '[TrueFinals] dialog: click fight button', dbg);
+    await page.click(clickSel);
+    log('info', '[TrueFinals] dialog: wait for modal', fight);
+    await page.waitForSelector('[role="dialog"], [data-state="open"]', { timeout: 5000 });
+    log('info', '[TrueFinals] dialog: load HTML & find Scheduled For', fight);
+    const $ = cheerio.load(await page.content());
+    const target = $('div.whitespace-nowrap.text-\\[0\\.85em\\].font-medium.leading-none.text-nforeground1')
+      .filter((_, el) => $(el).text().trim() === 'Scheduled For');
+    const raw = target.next().text().trim();
+    const normalized = raw ? fightTimeTo24h(raw) : null;
+    log('info', '[TrueFinals] dialog: parsed time', { ...fight, raw, normalized });
+    await page.keyboard.press('Escape');
+    await new Promise((r) => setTimeout(r, 150));
+    log('info', '[TrueFinals] dialog: closed (Escape)', fight);
+    return normalized;
+  } catch (err) {
+    log('warn', '[TrueFinals] dialog: failed', { ...fight, gameExSuffix, err: String(err) });
+    try {
+      await page.keyboard.press('Escape');
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+}
+
+async function scrapeTrueFinals($: cheerio.CheerioAPI, page: Page) {
     try{
         const competition = $('body')
           .children().first()
@@ -124,10 +152,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
           .children().first()
           .children().eq(1)
           .text();
-        console.log("competition", competition);
-        console.log("=============DEBUG LOG: scrape true finals================");
         const rows = $('button[id^="game-EX-"]');
-        console.log("rows length", rows.length);
         for(let i=0; i<rows.length; i++){
             //wraps raw DOM node in Cheerio object to use Cheerio methods
             const $row = $(rows[i]);
@@ -136,7 +161,6 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             //log('info', 'cage_time_container HTML', { html: $cage_time_container.html() });
             const cage_number = $cage_time_container.children().eq(2).children().first().text();
             const cage = cage_number ? parseInt(cage_number.replace(/^C/i, ''), 10) : null;
-            const fight_time = fightTimeTo24h($cage_time_container.children().eq(3).text());
             //log('info', 'fight_time element HTML', { html: $cage_time_container.children().eq(3).html() }); 
             const $robot_info_container = $row.children().eq(1);
             const robot_names : string[] = []; //same as robot_names = new Array<string>();
@@ -160,7 +184,6 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             //and .includes() on such a tuple narrows the argument type to the tuple's element types
             const our_robot_idx = robot_names.findIndex((name) => (CRC_ROBOTS as readonly string[]).includes(name));
             if(our_robot_idx === -1) {
-                //not fight involving our robot, move on the next button component (next fight)
                 continue;
             }
             const opponent_idx = (our_robot_idx === 0) ? 1 : 0;
@@ -182,7 +205,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
                 console.error('Error fetching previous win status:', prev_error);
                 continue;
             }
-
+                       
             /*
             Goal: prevent duplicates
             Database:
@@ -202,13 +225,25 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             }else{
               is_win = our_win_status === 'W' ? 'win' : 'lose';
             }
-
             const robot_id = await getRobotId(our_robot_name);
             if (robot_id === null) {
               log('info', `Robot "${our_robot_name}" not found in robots table, skipping fight`);
               continue;
             }
 
+            //if either new match, or updapted match, then we also want to get dialog scheduled for
+            //the current row[i] contains the game EX ID --> get this ID, then commence clicking
+            const game_ex_id = $row.attr('id')?.replace('game-EX-', '');
+            if(!game_ex_id){
+              console.error('Error getting game EX ID for row:', $row.attr('id'));
+              continue;
+            }
+            //this is the SCHEDULED time (different from time of call up)
+            //but if has not been called up yet, then scheduled time == current time
+            const fight_time = await getDialogScheduledFor(page, game_ex_id, {
+              our_robot_name,
+              opponent_robot_name,
+            });
             const payload = {
               robot_id,
               cage: !Number.isNaN(cage) ? cage : null,
@@ -217,7 +252,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               robot_name: our_robot_name,
               opponent_name: opponent_robot_name,
               competition: competition
-            }
+            };
 
             if(!prev){
               //TODO: ghost code lol, idk where notifs is getting called from
@@ -236,7 +271,6 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               const scheduleChanged = prev.fight_time !== fight_time || prev.cage !== cage;
 
               if (!isWinTransition && !scheduleChanged) {
-                //nothing meaningful changed, skip upsert + notif
                 continue;
               }
 
@@ -266,7 +300,7 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
  * Run the full TrueFinals scrape for both 12lb and 3lb exhibition pages.
  * Fetches each page with Puppeteer, parses with Cheerio, and runs scrapeTrueFinals to update the DB and send notifications.
  *
- * @returns Promise that resolves when both 12lb and 3lb scrapes have completed. Rejects if fetchHtmlWithPuppeteer or scrapeTrueFinals throws.
+ * @returns Promise that resolves when both 12lb and 3lb scrapes have completed. Rejects if Puppeteer or scrapeTrueFinals throws.
  *
  * Preconditions:
  * - BASE_URL_12LB and BASE_URL_3LB are reachable and render game-EX-* buttons.
@@ -276,12 +310,12 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
  */
 export async function runScrapeTrueFinals() {
   log('info', 'Fetching 12lb exhibition (Puppeteer)...');
-  const html_12LB = await fetchHtmlWithPuppeteer(BASE_URL_12LB);
-  const $_12LB = cheerio.load(html_12LB);
-  await scrapeTrueFinals($_12LB);
+  await withTrueFinalsPage(BASE_URL_12LB, async (page) => {
+    await scrapeTrueFinals(cheerio.load(await page.content()), page);
+  });
 
   log('info', 'Fetching 3lb exhibition (Puppeteer)...');
-  const html_3LB = await fetchHtmlWithPuppeteer(BASE_URL_3LB);
-  const $_3LB = cheerio.load(html_3LB);
-  await scrapeTrueFinals($_3LB);
+  await withTrueFinalsPage(BASE_URL_3LB, async (page) => {
+    await scrapeTrueFinals(cheerio.load(await page.content()), page);
+  });
 }
