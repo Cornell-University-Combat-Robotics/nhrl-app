@@ -12,7 +12,18 @@ import { log } from '../../src/utils/log.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** BrettZone API base URL; query with ?bot=<robotName>. Override via SCRAPER_TARGET_URL. */
-const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php'
+const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.io/brettZone/backend/fightsByBot.php';
+
+/**
+ * If non-empty, only fights whose API `tournamentName` (trimmed) equals one of these strings are parsed and upserted.
+ * Mimics manually picking TrueFinals pages via BASE_URL_* — edit this list before a run to target one event.
+ * Leave empty to process every tournament returned by the API.
+ */
+const TOURNAMENT_NAMES_TO_SCRAPE: readonly string[] = [
+  // e.g. 'NHRL May 2026 - 12lb',
+  'NHRL May 2026 12lb',
+  'NHRL May 2026 3lb'
+];
 
 /**
  * Parse fight data from the BrettZone API JSON response into app Fight objects.
@@ -20,6 +31,7 @@ const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.i
  *
  * @param matches - Raw array of match objects from the API (e.g. response.data.fights). Each may have player1, player2, cage, startTime, matchLength, winAnnotation, tournamentName, player1wins, player2wins.
  * @param ourRobotName - The robot we're querying for; used to set robot_name, opponent_name, and is_win (our robot can be player1 or player2).
+ * @param tournamentFilter - If provided and non-empty, only matches whose trimmed tournamentName is in this set are included.
  * @returns Array of Fight-like objects with competition, robot_name, opponent_name, cage, fight_time (formatted), is_win ('win'|'lose'), fight_duration, outcome_type. Invalid matches are omitted.
  *
  * API fields used:
@@ -31,18 +43,34 @@ const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.i
  * - Entries without player1 or player2 are skipped and logged as warnings.
  * - fight_time is produced by formatTime(parseInt(startTime)); cage is parsed from "Cage N".
  */
-function parseFightsFromApi(matches: any[], ourRobotName: string) {
+function parseFightsFromApi(
+  matches: any[],
+  ourRobotName: string,
+  tournamentFilter?: readonly string[],
+) {
+  const filterSet =
+    tournamentFilter && tournamentFilter.length > 0
+      ? new Set(
+          tournamentFilter.map((n) => n.trim()).filter((n) => n.length > 0),
+        )
+      : null;
 
-  const fights : Fight[] = matches
+  const fights: Fight[] = matches
     .filter((match) => {
-      //skips invalid arrays
-      if(!match.player1 || !match.player2) {
-        log('warn', 'skipping invalid match array', { match })
-        return false //excludes match 
+      if (!match.player1 || !match.player2) {
+        log('warn', 'skipping invalid match array', { match });
+        return false;
       }
-      return true
+      if (filterSet) {
+        const name = String(match.tournamentName ?? '').trim();
+        if (!filterSet.has(name)) {
+          return false;
+        }
+      }
+      return true;
     })
     .map((match) => {
+
       const isPlayer1 = match.player1 === ourRobotName
       const opponentName = isPlayer1 ? match.player2 : match.player1
       const cage = match.cage ? parseInt(match.cage.replace('Cage ', '')) : null
@@ -148,14 +176,23 @@ async function upsertFight(f: any) {
  * Preconditions:
  * - SCRAPER_TARGET_URL or default BrettZone URL is reachable; EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY set.
  * - CRC_ROBOTS names exist in robots table for fights to be stored.
+ * - When TOURNAMENT_NAMES_TO_SCRAPE is non-empty, only fights with matching API tournamentName are upserted.
  * Invariants:
  * - Robots are processed sequentially; within a robot, fights are upserted sequentially.
  * - Does not throw; errors are logged and the next robot/fight is processed.
  */
 export async function runScrape() {
-  log('info', `Scrape started for ${CRC_ROBOTS.length} robots`)
+  const tournamentFilter =
+    TOURNAMENT_NAMES_TO_SCRAPE.length > 0 ? TOURNAMENT_NAMES_TO_SCRAPE : undefined;
+  if (tournamentFilter) {
+    log('info', 'BrettZone tournament filter active', {
+      tournaments: [...tournamentFilter],
+    });
+  }
 
-  for(const robotName of CRC_ROBOTS) {
+  log('info', `Scrape started for ${CRC_ROBOTS.length} robots`);
+
+  for (const robotName of CRC_ROBOTS) {
     try{
       log('info', `Fetching fights for ${robotName}`)
       const url = `${API_BASE_URL}?bot=${encodeURIComponent(robotName)}`
@@ -167,7 +204,11 @@ export async function runScrape() {
         continue
       }
 
-      const fights = parseFightsFromApi(response.data.fights, robotName)
+      const fights = parseFightsFromApi(
+        response.data.fights,
+        robotName,
+        tournamentFilter,
+      );
       log('info', `Parsed ${fights.length} fight(s) for ${robotName}`)
 
       for(const f of fights){
