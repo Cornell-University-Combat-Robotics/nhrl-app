@@ -1,6 +1,7 @@
 /**
  * Shared scraper infrastructure: Supabase admin client, robot lookup, dynamic cron scheduler,
- * realtime subscription to cron table, and CRC robot list. Used by runScrapers and both scrapers.
+ * and CRC robot list. Used by runScrapers and both scrapers. Cron is read from the DB at
+ * startup; restart the process to pick up cron table changes.
  */
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
@@ -12,16 +13,10 @@ const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Shared Supabase admin client for scrapers and scheduler (realtime, cron).
- * Uses service role key; has full DB access. Realtime is configured for cron table subscription.
+ * Shared Supabase admin client for scrapers and scheduler.
+ * Uses service role key; has full DB access.
  */
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
+export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 let activeTask: cron.ScheduledTask | null = null;
 
@@ -101,66 +96,24 @@ export async function loadAndScheduleJobs(scrapers: ScraperFn[]) {
 }
 
 /**
- * Subscribe to Postgres changes on the `cron` table; when the table changes, reloads the
- * cron schedule by calling loadAndScheduleJobs with the same scrapers.
+ * Start the dynamic cron scheduler: load schedule from DB and register SIGINT handler
+ * to stop the task before exit.
  *
- * @param scrapers - Same scraper array passed to loadAndScheduleJobs when reloading.
- * @returns The Supabase Realtime channel (for unsubscribe on shutdown).
- *
- * Preconditions:
- * - supabaseAdmin is connected and realtime is enabled.
- * Invariants:
- * - Listens for all events ('*') on public.cron; any change triggers a full reschedule.
- */
-export function setupRealtimeSubscription(scrapers: ScraperFn[]) {
-  log('info', 'Setting up realtime subscription');
-
-  const channel = supabaseAdmin
-    .channel('cron-config-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'cron',
-      },
-      (payload) => {
-        log('info', 'Cron config changed', { payload });
-        loadAndScheduleJobs(scrapers);
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        log('info', 'Successfully subscribed to cron-config-changes channel');
-      } else {
-        log('error', 'Failed to subscribe to cron-config-changes channel', { status });
-      }
-    });
-
-  return channel;
-}
-
-/**
- * Start the dynamic cron scheduler: load schedule from DB, subscribe to cron table
- * changes, and register SIGINT handler to stop the task and unsubscribe before exit.
- *
- * @param scrapers - Array of scraper functions to run on schedule and on config reload.
+ * @param scrapers - Array of scraper functions to run on each cron tick.
  * @returns Promise that resolves once the server is running (does not resolve on SIGINT).
  *
  * Preconditions:
  * - loadAndScheduleJobs(scrapers) can succeed (cron row exists).
  * Invariants:
- * - Process stays alive until SIGINT; then activeTask is stopped, channel unsubscribed, exit(0).
+ * - Process stays alive until SIGINT; then activeTask is stopped, exit(0).
  */
 export async function start(scrapers: ScraperFn[]) {
-  log('info', 'Starting realtime dynamic cron server...');
+  log('info', 'Starting dynamic cron server...');
   log('info', 'Time: ' + new Date().toISOString());
 
   await loadAndScheduleJobs(scrapers);
 
-  const channel = setupRealtimeSubscription(scrapers);
-
-  log('info', 'Server is running. Listening for database changes in real-time.');
+  log('info', 'Server is running. Restart the process to reload cron from the database.');
 
   process.on('SIGINT', async () => {
     log('info', 'Shutting down...');
@@ -169,7 +122,6 @@ export async function start(scrapers: ScraperFn[]) {
       activeTask.stop();
     }
 
-    channel.unsubscribe();
     log('info', 'Server shutdown complete');
     process.exit(0);
   });
@@ -179,7 +131,7 @@ export async function start(scrapers: ScraperFn[]) {
  * Either run all scrapers once and exit, or start the long-running scheduler.
  *
  * @param scrapers - Array of scraper functions to run (in order).
- * @param runOnce - If true, run each scraper once in sequence then process.exit(0). If false, start the scheduler and listen for cron + realtime.
+ * @param runOnce - If true, run each scraper once in sequence then process.exit(0). If false, start the scheduler from DB cron only.
  * @returns Promise that resolves when runOnce is true after scrapes complete, or when start() completes (scheduler running). Calls process.exit(0) when runOnce.
  *
  * Preconditions:

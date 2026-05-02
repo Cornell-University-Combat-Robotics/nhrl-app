@@ -11,9 +11,9 @@ import { log } from '../../src/utils/log.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
 /** TrueFinals 12lb exhibition page URL. */
-const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_mar26_12lb_/exhibition';
+const BASE_URL_12LB = 'https://truefinals.com/tournament/nhrl_may26_12lb/exhibition';
 /** TrueFinals 3lb exhibition page URL. */
-const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_mar26_3lb_/exhibition';
+const BASE_URL_3LB = 'https://truefinals.com/tournament/nhrl_may26_3lb/exhibition';
 
 /**
  * Fetch the full HTML of a URL after JavaScript has run, using a headless browser.
@@ -60,7 +60,7 @@ function fightTimeTo24h(timeStr: string): string {
   const isPm = match[3].toUpperCase() === 'PM';
   if (isPm && h !== 12) h += 12;
   if (!isPm && h === 12) h = 0;
-  return `${h.toString().padStart(2, '0')}:${m}`;
+  return `${h.toString().padStart(2, '0')}:${m}:00`;
 }
 
 //TODO: add QUALIFYING INFO (like Q1-02)
@@ -220,13 +220,14 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
             }
 
             if(!prev){
+              //TODO: ghost code lol, idk where notifs is getting called from
               //no previous match found, so this is a NEW match
-              const { error } = await supabaseAdmin.from('fights').insert(payload);
+              const { error } = await supabaseAdmin.from('fights').upsert(payload, { onConflict: 'robot_name, opponent_name, competition' });
+              log('info', 'Inserted new fight for', { payload });
               if(error) {
                   console.error('Error updating supabase:', error);
                   continue;
               }
-              await createFightNotifBroadcast(payload, supabaseAdmin);
             }else{
               //is_win NULL -> non-null = fight just concluded -> Fight Result notif
               const isWinTransition = prev.is_win == null && is_win != null;
