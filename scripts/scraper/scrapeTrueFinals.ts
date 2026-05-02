@@ -238,6 +238,8 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI, page: Page) {
               console.error('Error getting game EX ID for row:', $row.attr('id'));
               continue;
             }
+            //this is the SCHEDULED time (different from time of call up)
+            //but if has not been called up yet, then scheduled time == current time
             const fight_time = await getDialogScheduledFor(page, game_ex_id, {
               our_robot_name,
               opponent_robot_name,
