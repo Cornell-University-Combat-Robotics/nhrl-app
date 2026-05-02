@@ -9,6 +9,7 @@ export interface Robot {
   drive: 'walker' | '2 wheel' | '4 wheel';
   top_speed?: number;
   weapon_speed?: number;
+  is_eliminated?: boolean;
 }
 
 /**
