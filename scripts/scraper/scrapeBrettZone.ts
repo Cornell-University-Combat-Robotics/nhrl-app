@@ -139,7 +139,7 @@ async function upsertFight(f: any) {
     if (upsertErr) throw upsertErr
 
     if (!existing) {
-      await createFightNotifBroadcast(payload, supabaseAdmin)
+      //await createFightNotifBroadcast(payload, supabaseAdmin)
       log('info', `Inserted fight for ${f.robot_name} vs ${f.opponent_name || 'unknown'}`)
     } else {
       //is_win NULL -> non-null is the "fight just concluded" signal -> Fight Result notif
@@ -149,9 +149,9 @@ async function upsertFight(f: any) {
         payload.fight_time !== existing.fight_time || payload.cage !== existing.cage
 
       if (isWinTransition) {
-        await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true })
+        //await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true })
       } else if (!wasAlreadyComplete && scheduleChanged) {
-        await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
+        //await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false })
       }
       log('info', `Updated fight ${existing.fight_id} for ${f.robot_name}`)
     }

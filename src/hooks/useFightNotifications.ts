@@ -122,14 +122,15 @@ async function handleFightUpdate(
   if (isWinTransition) {
     const result = newFight.is_win === "win" ? "WIN!" : "LOSS";
     const outcome = newFight.outcome_type ? ` (${newFight.outcome_type})` : "";
-    await showLocal(
-      "Fight Result",
-      `Fight Result: ${newFight.robot_name ?? "Robot"} vs ${newFight.opponent_name ?? "unknown"} - ${result}${outcome}`,
-    );
+    //wtf does this do>
+    //await showLocal(
+    //  "Fight Result",
+    //  `Fight Result: ${newFight.robot_name ?? "Robot"} vs ${newFight.opponent_name ?? "unknown"} - ${result}${outcome}`,
+    //);
   } else if (!wasAlreadyComplete && scheduleChanged) {
-    await showLocal(
-      "Updated Fight",
-      `${newFight.robot_name ?? "Robot"} vs ${newFight.opponent_name ?? "unknown"} scheduled for ${newFight.fight_time ?? "TBD"} at Cage ${newFight.cage ?? "?"}.`,
-    );
+    // await showLocal(
+    //  "Updated Fight",
+    //  `${newFight.robot_name ?? "Robot"} vs ${newFight.opponent_name ?? "unknown"} scheduled for ${newFight.fight_time ?? "TBD"} at Cage ${newFight.cage ?? "?"}.`,
+    //);
   }
 }

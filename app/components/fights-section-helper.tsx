@@ -44,7 +44,7 @@ export default function computeSortedSections(fights: Fight[] | undefined, filte
         const yearA = dateA.getFullYear();
         const yearB = dateB.getFullYear();
         if (yearB !== yearA) return yearB - yearA;
-        return dateB.getMonth() - dateA.getMonth();
+        return dateA.getMonth() - dateB.getMonth();
     });
 
     let sections: FightSection[] = sortedKeys.map((key) => ({

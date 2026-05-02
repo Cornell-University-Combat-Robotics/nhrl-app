@@ -235,7 +235,7 @@ export default function FightFormScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Outcome Type</Text>
-            {([null, 'KO', 'TO', 'JD'] as const).map((outcome) => (
+            {([null, 'KO', 'TO', 'JD', 'Forfeit'] as const).map((outcome) => (
               <TouchableOpacity
                 key={outcome}
                 style={styles.modalOption}

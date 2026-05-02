@@ -6,7 +6,7 @@ import * as cheerio from "cheerio";
 import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { CRC_ROBOTS } from '../../src/db/robots.ts';
-import { createFightNotifBroadcast, updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
+import { updateFightNotifBroadcast } from '../../src/notifications/sendPushNotif.ts';
 import { log } from '../../src/utils/log.ts';
 import { getRobotId, supabaseAdmin } from './scraperHelper.js';
 
@@ -51,10 +51,11 @@ async function fetchHtmlWithPuppeteer(url: string): Promise<string> {
  * Invariants:
  * - 12 PM -> 12:xx, 12 AM -> 00:xx; other PM hours add 12, AM hours unchanged. Minutes are preserved. Single-digit hours accepted.
  */
-function fightTimeTo24h(timeStr: string): string {
+function fightTimeTo24h(timeStr: string): string | null {
   const t = timeStr.trim();
+  if (!t) return null;
   const match = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return timeStr;
+  if (!match) return null;
   let h = parseInt(match[1], 10);
   const m = match[2];
   const isPm = match[3].toUpperCase() === 'PM';
@@ -250,9 +251,9 @@ async function scrapeTrueFinals($: cheerio.CheerioAPI) {
               }
 
               if (isWinTransition) {
-                await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
+                //await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: true });
               } else if (!wasAlreadyComplete && scheduleChanged) {
-                await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
+                //await updateFightNotifBroadcast(payload, supabaseAdmin, { isWinUpdate: false });
               }
             }
         };
