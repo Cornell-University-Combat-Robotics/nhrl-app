@@ -18,14 +18,14 @@ export interface Robot {
  *
  * Source of truth for both the Expo app (admin notification form) and
  * the Node scrapers (`scripts/scraper/scrapeBrettZone.ts`, `scrapeTrueFinals.ts`).
- * 'Benny R. Johm',
+ * 
+ */
+export const CRC_ROBOTS = [
+  'Benny R. Johm',
   'Huey',
   'Apollo',
   'Jormungandr',
-  'The Four Horsemen',
- */
-export const CRC_ROBOTS = [
-  'Luna'
+  'The Four Horsemen'
 ] as const;
 export type CRCRobotName = typeof CRC_ROBOTS[number];
 
