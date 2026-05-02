@@ -12,7 +12,8 @@
     "lint": "expo lint",
     "scrape": "tsx scripts/scraper/runScrapers.ts",
     "scrape-brettzone": "tsx scripts/scraper/runBrettZoneOnce.ts",
-    "scrape-truefinals": "tsx scripts/scraper/runTrueFinalsOnce.ts"
+    "scrape-truefinals": "tsx scripts/scraper/runTrueFinalsOnce.ts",
+    "scrape-bracket": "tsx scripts/scraper/runBracketOnce.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

@@ -1,11 +1,13 @@
 /**
  * Shared scraper infrastructure: Supabase admin client, robot lookup, dynamic cron scheduler,
- * and CRC robot list. Used by runScrapers and both scrapers. Cron is read from the DB at
- * startup; restart the process to pick up cron table changes.
+ * TrueFinals/bracket Puppeteer helpers, and CRC robot list. Used by runScrapers and scrapers.
+ * Cron is read from the DB at startup; restart the process to pick up cron table changes.
  */
+import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 import cron from 'node-cron';
+import puppeteer, { type Page } from 'puppeteer';
 import { getCron } from '../../src/db/cron.js';
 import { log } from '../../src/utils/log.js';
 
@@ -41,6 +43,94 @@ export async function getRobotId(robotName: string): Promise<number | null> {
   if (error) return null;
   if (data && data.length > 0) return (data[0] as { robot_id: number }).robot_id;
   return null;
+}
+
+/** Context for dialog debug logs (CRC robot vs opponent). */
+export type DialogFightContext = {
+  our_robot_name: string;
+  opponent_robot_name: string;
+};
+
+/** 12-hour "h:mm AM/PM" → 24-hour `HH:MM:00` for DB TIME; empty or non-match → null. */
+export function fightTimeTo24h(timeStr: string): string | null {
+  const t = timeStr.trim();
+  if (!t) return null;
+  const match = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const isPm = match[3].toUpperCase() === 'PM';
+  if (isPm && h !== 12) h += 12;
+  if (!isPm && h === 12) h = 0;
+  return `${h.toString().padStart(2, '0')}:${m}:00`;
+}
+
+/**
+ * Launch headless Chrome, open `url`, wait for `waitSelector`, then run `fn(page)`.
+ * Browser is always closed after `fn` completes or throws.
+ */
+export async function withTournamentPage(
+  url: string,
+  waitSelector: string,
+  fn: (page: Page) => Promise<void>,
+  gotoTimeoutMs = 30_000,
+  selectorTimeoutMs = 25_000,
+): Promise<void> {
+  const browser = await puppeteer.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: gotoTimeoutMs });
+    await page.waitForSelector(waitSelector, { timeout: selectorTimeoutMs });
+    await fn(page);
+  } finally {
+    await browser.close();
+  }
+}
+
+function buttonIdSelector(buttonId: string): string {
+  return `button[id="${buttonId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
+}
+
+/**
+ * Click the fight row button, read "Scheduled For" from the modal, normalize time, close with Escape.
+ */
+export async function getDialogScheduledFor(
+  page: Page,
+  buttonId: string,
+  fight: DialogFightContext,
+  logTag: string,
+): Promise<string | null> {
+  if (!buttonId) {
+    log('warn', `[${logTag}] dialog: empty button id`, fight);
+    return null;
+  }
+  const clickSel = buttonIdSelector(buttonId);
+  const dbg = { ...fight, buttonId, clickSel };
+  try {
+    log('info', `[${logTag}] dialog: click fight button`, dbg);
+    await page.click(clickSel);
+    log('info', `[${logTag}] dialog: wait for modal`, fight);
+    await page.waitForSelector('[role="dialog"], [data-state="open"]', { timeout: 5000 });
+    log('info', `[${logTag}] dialog: load HTML & find Scheduled For`, fight);
+    const $ = cheerio.load(await page.content());
+    const target = $('div.whitespace-nowrap.text-\\[0\\.85em\\].font-medium.leading-none.text-nforeground1')
+      .filter((_, el) => $(el).text().trim() === 'Scheduled For');
+    const raw = target.next().text().trim();
+    const normalized = raw ? fightTimeTo24h(raw) : null;
+    log('info', `[${logTag}] dialog: parsed time`, { ...fight, raw, normalized });
+    await page.keyboard.press('Escape');
+    await new Promise((r) => setTimeout(r, 150));
+    log('info', `[${logTag}] dialog: closed (Escape)`, fight);
+    return normalized;
+  } catch (err) {
+    log('warn', `[${logTag}] dialog: failed`, { ...fight, buttonId, err: String(err) });
+    try {
+      await page.keyboard.press('Escape');
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
 }
 
 /**
