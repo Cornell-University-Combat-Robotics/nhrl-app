@@ -1,7 +1,7 @@
 import { useFights } from '@/src/hooks/useFights';
 import { useRealtimeFights } from '@/src/hooks/useRealtimeFights';
 import { formatTimeForDisplay } from '@/src/utils/timeHelpers';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router/react-navigation";
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import computeSortedSections, { type FightFilter } from '../components/fights-section-helper';
