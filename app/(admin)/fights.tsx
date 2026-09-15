@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Modal, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import computeSortedSections, { type FightFilter } from '../components/fights-section-helper';
-import "@react-navigation/native";
+import "@react-navigation/native"; 
 
 /**
  * Admin fights list. Displays all fights grouped by competition date
