@@ -73,6 +73,7 @@ This app provides a comprehensive platform for managing and viewing NHRL robot f
 4. Start the app
 
    ```bash
+   npx expo login
    npx expo start
    ```
 
