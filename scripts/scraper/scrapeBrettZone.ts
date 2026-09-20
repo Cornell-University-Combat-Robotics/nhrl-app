@@ -21,8 +21,8 @@ const API_BASE_URL = process.env.SCRAPER_TARGET_URL || 'https://brettzone.nhrl.i
  */
 const TOURNAMENT_NAMES_TO_SCRAPE: readonly string[] = [
   // e.g. 'NHRL May 2026 - 12lb',
-  'NHRL May 2026 12lb',
-  'NHRL May 2026 3lb'
+  'NHRL May 2027 12lb',
+  'NHRL May 2027 3lb'
 ];
 
 /**
