@@ -36,6 +36,50 @@ export async function updateFightNotifBroadcast(
     } 
   }
 
+  /*
+  #1:
+  Thresholds:
+  - current problem: 3 updates to db at once for same change in fight
+    - priority ranking for each source 
+      1) manual admin
+      2) true finals
+      3) brettzone 
+    - before you send notif -- waiting period of time -- global counter: wait 2ms, catch the last db update request -- only update for that
+    - slight difference: time of fight -- some of them == 11:00:00, 11:00 -- normalize
+  - importance of notifications:
+    1) win/lose super important
+    2) intervals: send update notif only 2h, 1h, 30min, 20min, 10min, 5min, 1min before start time -- catch all updates
+    - if time diff < 1min -- dont send notif, but update on ui
+       - problem: how do you define countdowns. fight == 11am. 10:50, 10:55 -- send notif, fight == 11:10am --> counter is stale
+       - if the fight time gets updated, reset counter 
+    - notification settings: users can select how frequent they want notifs (dropdown -- preset)
+
+    #2:
+    deprecation: SDK 53
+    - migrate to React Native Firebase (@react-native-firebase/messaging) instead
+
+    #3: future
+    - individual robot page: running score
+      - win probability: 
+        1) communnity scoring: every member is allowed to vote for whether they think opponent or we will win
+          - real time: whenever user clicks vote: see change in distribution (e.g. pollev)
+        2) predicted probability: scoring framework: some type of weapon > another weapon
+          - if condition script
+    - AI-generated debrief: 
+      - see if commentary in text form -- easiest way to feed
+        - no text form? 
+          1) analyze the video -- vv hard
+          2) video -> audio -> audio to text translation
+      - AI-generation:
+        - open source model --> api keys -- who's gonna sponsor this?
+        - small model
+      - alternative: w/o AI
+        - precondition: text
+        - script identifying keywords -- extract these --> fill in pre-set template (opponent, interesting things, time)
+          - [oh my god, oh no]: incidents/interesting things (category)
+          - [spinner is out of control, not working]: weapon events
+    */
+
 /** Split array into chunks of size n. */
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];

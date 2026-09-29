@@ -8,6 +8,8 @@ export type FightCardProps = {
     innerBox: string;
 }
 
+//const [isAdmin, setIsAdmin] = useState(false)
+//(isAdmin && <render the edit button>)
 export default function IndivFightCard({ props }: { props: FightCardProps }) {
     return (
         <View style={styles.card}>
